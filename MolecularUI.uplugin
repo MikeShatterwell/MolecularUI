@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "MolecularUI",
+	"Description": "A collection of UI components",
+	"Category": "UI",
+	"CreatedBy": "Mike Desrosiers",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "MolecularUI",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
