@@ -16,12 +16,12 @@ class MOLECULARUI_API UMViewModelBase : public UMVVMViewModelBase
 	GENERATED_BODY()
 	
 public:
-	UFUNCTION(BlueprintCallable)
-	void HandleButtonPress();
+	UFUNCTION(BlueprintCallable, Category = "Button")
+	virtual void HandleButtonPress();
 
 	UFUNCTION(BlueprintCallable)
-	void HandleButtonHover();
+	virtual void HandleButtonHover();
 
 	UFUNCTION(BlueprintCallable)
-	void HandleButtonUnhover();
+	virtual void HandleButtonUnhover();
 };

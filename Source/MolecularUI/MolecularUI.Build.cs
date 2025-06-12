@@ -27,7 +27,9 @@ public class MolecularUI : ModuleRules
 			{
 				"Core",
 				"GameplayTags",
-				"ModelViewViewModel"
+				"ModelViewViewModel", 
+				"CommonUI",
+				"UMG"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
