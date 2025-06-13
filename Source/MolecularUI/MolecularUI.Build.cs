@@ -26,9 +26,10 @@ public class MolecularUI : ModuleRules
 			new string[]
 			{
 				"Core",
+				"CommonUI",
+				"FieldNotification",
 				"GameplayTags",
 				"ModelViewViewModel", 
-				"CommonUI",
 				"UMG"
 				// ... add other public dependencies that you statically link with here ...
 			}
