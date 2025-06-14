@@ -6,7 +6,7 @@
 /**
  * Binds a member function of the current UObject to a ViewModel's Field-Notify property.
  * Supports both raw pointers (UMyViewModel*) and TObjectPtr<UMyViewModel>.
- * Includes COMPILE-TIME checks for type safety.
+ * Includes compile-time checks for type safety.
  *
  * @param ViewModel      Pointer or TObjectPtr to the ViewModel instance.
  * @param Property       The name of the property in the ViewModel's FFieldNotificationClassDescriptor.
@@ -69,7 +69,8 @@ do \
 
 namespace UE::MolecularMacros::Private
 {
-	/** * Trait to determine if a type is a raw pointer or a TObjectPtr.
+	/**
+	 * Trait to determine if a type is a raw pointer or a TObjectPtr.
 	 * This is used for our static_assert checks.
 	 */
 	template<typename T, typename = void>
