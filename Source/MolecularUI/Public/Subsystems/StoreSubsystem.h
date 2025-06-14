@@ -31,6 +31,9 @@ protected:
 	void LazyLoadOwnedItems();
 	void LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest);
 
+	/** Attempts to process the next queued purchase request when possible. */
+	void ProcessPendingPurchaseRequests();
+
 	// Helper methods to create dummy data for testing purposes.
 	void CreateDummyStoreData();
 	void CreateDummyOwnedStoreData();
@@ -45,6 +48,14 @@ protected:
 	UPROPERTY(Transient)
 	TMap<FName, TObjectPtr<UItemViewModel>> ItemViewModelCache;
 
+	/**
+	 * Pending purchase requests queued when the store is not ready.
+	 */
+	UPROPERTY(Transient)
+	TArray<FPurchaseRequest> PendingPurchaseRequests;
+
+	UPROPERTY()
+	int32 MaxPendingPurchaseRequestsCount = 5;
 
 	/* The raw "model" data. In a real context, this would come from a database or a backend API. */
 	UPROPERTY(Transient)
@@ -73,4 +84,3 @@ protected:
 	 */
 	UItemViewModel* GetOrCreateItemViewModel(const FStoreItem& ItemData);
 };
-

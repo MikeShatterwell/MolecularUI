@@ -14,6 +14,8 @@ void UStoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	
 	UE_MVVM_BIND_FIELD(StoreViewModel, FilterText, OnFilterTextChanged);
 	UE_MVVM_BIND_FIELD(StoreViewModel, PurchaseRequest, OnPurchaseRequestChanged);
+	
+	PendingPurchaseRequests.Reserve(MaxPendingPurchaseRequestsCount);
 }
 
 void UStoreSubsystem::Deinitialize()
@@ -23,9 +25,12 @@ void UStoreSubsystem::Deinitialize()
 		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 	}
 
+	UE_MVVM_UNBIND_FIELD(StoreViewModel, FilterText);
+	UE_MVVM_UNBIND_FIELD(StoreViewModel, PurchaseRequest);
+
 	StoreViewModel = nullptr;
 	ItemViewModelCache.Empty();
-	
+
 	BackendStoreItems.Empty();
 	BackendOwnedStoreItems.Empty();
 	BackendPlayerCurrency = INDEX_NONE;
@@ -53,29 +58,6 @@ UStoreViewModel* UStoreSubsystem::GetStoreViewModel_Implementation()
 	return StoreViewModel;
 }
 
-UItemViewModel* UStoreSubsystem::GetOrCreateItemViewModel(const FStoreItem& ItemData)
-{
-	// Check if the ViewModel already exists in the cache and is valid.
-	if (TObjectPtr<UItemViewModel>* FoundViewModel = ItemViewModelCache.Find(ItemData.ItemId))
-	{
-		if (IsValid(*FoundViewModel))
-		{
-			// It exists, update its data just in case it changed and return it.
-			(*FoundViewModel)->SetItemData(ItemData);
-			return *FoundViewModel;
-		}
-	}
-
-	// If not found or was invalid (e.g. garbage collected), create a new one.
-	UItemViewModel* NewItemVM = NewObject<UItemViewModel>(StoreViewModel);
-	NewItemVM->SetItemData(ItemData);
-
-	// Add the new ViewModel to the cache for future reuse.
-	ItemViewModelCache.Add(ItemData.ItemId, NewItemVM);
-
-	return NewItemVM;
-}
-
 void UStoreSubsystem::OnFilterTextChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
 {
 	LazyLoadStoreItems();
@@ -84,10 +66,32 @@ void UStoreSubsystem::OnFilterTextChanged(UObject* Object, UE::FieldNotification
 void UStoreSubsystem::OnPurchaseRequestChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
 {
 	const FPurchaseRequest& PurchaseRequestId = StoreViewModel->GetPurchaseRequest();
-	if (PurchaseRequestId.ItemId.IsValid()) // Only process valid requests
+
+	// Only process valid requests
+	if (PurchaseRequestId.ItemId == NAME_None)
 	{
-		LazyPurchaseItem(PurchaseRequestId);
+		return;
 	}
+
+	// If the store isn't ready, queue or reset the request and exit early.
+	if (StoreViewModel->GetStoreState() != EStoreState::Ready)
+	{
+		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Store not ready. Queuing purchase request for %s"), __FUNCTION__, *PurchaseRequestId.ItemId.ToString());
+
+		if (PendingPurchaseRequests.Num() < MaxPendingPurchaseRequestsCount)
+		{
+			PendingPurchaseRequests.Add(PurchaseRequestId);
+		}
+		else
+		{
+			UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Pending purchase queue full. Discarding request for %s"), __FUNCTION__, *PurchaseRequestId.ItemId.ToString());
+		}
+
+		StoreViewModel->SetPurchaseRequest(FPurchaseRequest());
+		return;
+	}
+
+	LazyPurchaseItem(PurchaseRequestId);
 }
 
 void UStoreSubsystem::LazyLoadStoreItems()
@@ -116,6 +120,7 @@ void UStoreSubsystem::LazyLoadStoreItems()
 
 		StoreViewModel->SetAvailableItems(FilteredItems);
 		StoreViewModel->SetStoreState(EStoreState::Ready);
+		ProcessPendingPurchaseRequests();
 
 	}, /*InRate*/ FMath::RandRange(0.1f, 1.5f), /*bLoops*/ false);
 }
@@ -152,6 +157,7 @@ void UStoreSubsystem::LazyLoadStoreCurrency()
 		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Player currency loaded: %d"), __FUNCTION__, LoadedCurrency);
 
 		StoreViewModel->SetStoreState(EStoreState::Ready);
+		ProcessPendingPurchaseRequests();
 	}, /*InRate*/ FMath::RandRange(0.1f, 1.0f), /*bLoops*/ false);
 }
 
@@ -195,6 +201,20 @@ void UStoreSubsystem::LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest)
 		StoreViewModel->SetStoreState(EStoreState::Ready);
 
 	}, /*InRate*/ FMath::RandRange(0.1f, 2.0f), /*bLoops*/ false);
+}
+
+void UStoreSubsystem::ProcessPendingPurchaseRequests()
+{
+	if (StoreViewModel->GetStoreState() != EStoreState::Ready || PendingPurchaseRequests.Num() == 0)
+	{
+		return;
+	}
+
+	const FPurchaseRequest NextRequest = PendingPurchaseRequests[0];
+	PendingPurchaseRequests.RemoveAt(0);
+
+	// Trigger processing by setting the ViewModel property, which will call OnPurchaseRequestChanged again.
+	StoreViewModel->SetPurchaseRequest(NextRequest);
 }
 
 void UStoreSubsystem::CreateDummyStoreData()
@@ -274,4 +294,27 @@ void UStoreSubsystem::CreateDummyPlayerCurrency()
 {
 	// Simulate player currency
 	BackendPlayerCurrency = 12124;
+}
+
+UItemViewModel* UStoreSubsystem::GetOrCreateItemViewModel(const FStoreItem& ItemData)
+{
+	// Check if the ViewModel already exists in the cache and is valid.
+	if (TObjectPtr<UItemViewModel>* FoundViewModel = ItemViewModelCache.Find(ItemData.ItemId))
+	{
+		if (IsValid(*FoundViewModel))
+		{
+			// It exists, update its data just in case it changed and return it.
+			(*FoundViewModel)->SetItemData(ItemData);
+			return *FoundViewModel;
+		}
+	}
+
+	// If not found or was invalid (e.g. garbage collected), create a new one.
+	UItemViewModel* NewItemVM = NewObject<UItemViewModel>(StoreViewModel);
+	NewItemVM->SetItemData(ItemData);
+
+	// Add the new ViewModel to the cache for future reuse.
+	ItemViewModelCache.Add(ItemData.ItemId, NewItemVM);
+
+	return NewItemVM;
 }
