@@ -15,6 +15,30 @@ class UStoreViewModel : public UMVVMViewModelBase
 	GENERATED_BODY()
 
 public:
+	// Setters and Getters
+	void SetPlayerCurrency(const int32 InCurrency) { UE_MVVM_SET_PROPERTY_VALUE(PlayerCurrency, InCurrency); }
+	int32 GetPlayerCurrency() const { return PlayerCurrency; }
+
+	void SetAvailableItems(const TArray<UItemViewModel*>& InItems) { UE_MVVM_SET_PROPERTY_VALUE(AvailableItems, InItems); }
+	const TArray<UItemViewModel*>& GetAvailableItems() const { return AvailableItems; }
+
+	void SetOwnedItems(const TArray<UItemViewModel*>& InItems) { UE_MVVM_SET_PROPERTY_VALUE(OwnedItems, InItems); }
+	const TArray<TObjectPtr<UItemViewModel>>& GetOwnedItems() const { return OwnedItems; }
+
+	void SetPurchaseRequest(const FPurchaseRequest InRequest) { UE_MVVM_SET_PROPERTY_VALUE(PurchaseRequest, InRequest); }
+	FPurchaseRequest GetPurchaseRequest() const { return PurchaseRequest; }
+
+	void SetStoreState(const EStoreState InState) { UE_MVVM_SET_PROPERTY_VALUE(StoreState, InState); }
+	EStoreState GetStoreState() const { return StoreState; }
+
+	void SetFilterText(const FString& InFilterText) { UE_MVVM_SET_PROPERTY_VALUE(FilterText, InFilterText); }
+	FString GetFilterText() const { return FilterText; }
+
+	void SetErrorMessage(const FText& InErrorMessage) { UE_MVVM_SET_PROPERTY_VALUE(ErrorMessage, InErrorMessage); }
+	FText GetErrorMessage() const { return ErrorMessage; }
+
+protected:
+	/* These are the "Data Properties" that the ViewModel will expose to the View. */
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	int32 PlayerCurrency;
 
@@ -24,25 +48,17 @@ public:
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	TArray<TObjectPtr<UItemViewModel>> OwnedItems;
 
-	/* These are the "Intent Channels" that allow the ViewModel to communicate with the Model (Subsystem). */
-
-	// UI sets this when the user selects an item
+	/* These are the "Intent Channels" that allow the ViewModel to communicate with the Model. */
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	FPurchaseRequest PurchaseRequest;
 
-	UPROPERTY(BlueprintReadWrite, Setter, FieldNotify, meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	FString FilterText;
 
-	UPROPERTY(BlueprintReadOnly, FieldNotify, Category = "Store ViewModel")
+	/* These are the "Stateful Communication" properties that allow the Model to communicate back to the ViewModel. */
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	EStoreState StoreState = EStoreState::None;
-
-	// Setters and Getters
-	void SetPlayerCurrency(const int32 InCurrency) { UE_MVVM_SET_PROPERTY_VALUE(PlayerCurrency, InCurrency); }
-	int32 GetPlayerCurrency() const { return PlayerCurrency; }
-
-	void SetAvailableItems(const TArray<FStoreItem>& InItems) { UE_MVVM_SET_PROPERTY_VALUE(AvailableItems, InItems); }
-	const TArray<UItemViewModel*>& GetAvailableItems() const { return AvailableItems; }
-
-	void SetPurchaseRequest(const FPurchaseRequest InRequest) { UE_MVVM_SET_PROPERTY_VALUE(PurchaseRequest, InRequest); }
-	FPurchaseRequest GetPurchaseRequest() const { return PurchaseRequest; }
+	
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
+	FText ErrorMessage = FText::GetEmpty();
 };

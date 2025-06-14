@@ -22,6 +22,8 @@ struct FItemUIData
 	GENERATED_BODY()
 
 	FItemUIData() = default;
+	FItemUIData(const FText& InDisplayName)
+		: DisplayName(InDisplayName) {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
 	FText DisplayName = FText::FromString("Default Item");
@@ -34,8 +36,8 @@ struct FStoreItem
 	GENERATED_BODY()
 
 	FStoreItem() = default;
-	FStoreItem(const FName& InId, const int32 InCost)
-		: ItemId(InId), Cost(InCost) {}
+	FStoreItem(const FName& InId, const int32 InCost, const FItemUIData& InUIData)
+		: ItemId(InId), Cost(InCost), UIData(InUIData) {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
 	FName ItemId = NAME_None;
