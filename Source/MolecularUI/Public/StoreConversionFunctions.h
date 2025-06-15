@@ -18,7 +18,4 @@ class MOLECULARUI_API UStoreConversionFunctions : public UBlueprintFunctionLibra
 
 	UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
 	static bool Conv_AreStoreStatesEqual(const EStoreState CurrentStoreState, const EStoreState TestStoreState);
-
-	UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
-	static bool Conv_IsObjectValid(const UObject* Object);
 };

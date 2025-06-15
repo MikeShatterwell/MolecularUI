@@ -8,8 +8,3 @@ bool UStoreConversionFunctions::Conv_AreStoreStatesEqual(const EStoreState Curre
 {
 	return CurrentStoreState == TestStoreState;
 }
-
-bool UStoreConversionFunctions::Conv_IsObjectValid(const UObject* Object)
-{
-	return IsValid(Object);
-}
