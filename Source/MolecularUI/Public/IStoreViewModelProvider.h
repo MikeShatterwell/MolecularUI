@@ -1,4 +1,4 @@
-﻿// Copyright Shatterwell Inc. All Rights Reserved.
+﻿// Copyright Mike Desrosiers, All Rights Reserved.
 
 #pragma once
 

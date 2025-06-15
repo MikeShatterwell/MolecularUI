@@ -1,8 +1,8 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Copyright Mike Desrosiers, All Rights Reserved.
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include <CoreMinimal.h>
 #include <Kismet/BlueprintFunctionLibrary.h>
 
 #include "MolecularTypes.h"
@@ -18,4 +18,7 @@ class MOLECULARUI_API UStoreConversionFunctions : public UBlueprintFunctionLibra
 
 	UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
 	static bool Conv_AreStoreStatesEqual(const EStoreState CurrentStoreState, const EStoreState TestStoreState);
+
+	UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
+	static FText Conv_StoreStateToText(const EStoreState StoreState);
 };

@@ -1,5 +1,7 @@
-﻿#pragma once
+﻿// Copyright Mike Desrosiers, All Rights Reserved.
 
-#include "CoreMinimal.h"
+#pragma once
+
+#include <CoreMinimal.h>
 
 DECLARE_LOG_CATEGORY_EXTERN(LogMolecularUI, Log, All);

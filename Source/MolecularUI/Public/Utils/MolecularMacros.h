@@ -1,7 +1,9 @@
-﻿#pragma once
+﻿// Copyright Mike Desrosiers, All Rights Reserved.
 
-#include "CoreMinimal.h"
-#include "Templates/RemoveReference.h"
+#pragma once
+
+#include <CoreMinimal.h>
+#include <Templates/RemoveReference.h>
 
 /**
  * Binds a member function of the current UObject to a ViewModel's Field-Notify property.

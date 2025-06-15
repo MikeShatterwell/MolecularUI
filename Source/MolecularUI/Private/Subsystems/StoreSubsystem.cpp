@@ -1,4 +1,6 @@
-﻿#include "Subsystems/StoreSubsystem.h"
+﻿// Copyright Mike Desrosiers, All Rights Reserved.
+
+#include "Subsystems/StoreSubsystem.h"
 
 #include <TimerManager.h>
 
@@ -150,89 +152,82 @@ void UStoreSubsystem::LazyLoadStoreItems()
 {
 	// Clear any pending timer to avoid multiple requests.
 	GetWorld()->GetTimerManager().ClearTimer(ItemLoadTimerHandle);
-	TWeakObjectPtr WeakThis(this);
-	GetWorld()->GetTimerManager().SetTimer(ItemLoadTimerHandle, [WeakThis]()
+
+	FTimerDelegate ItemLoadDelegate;
+	ItemLoadDelegate.BindWeakLambda(this, [this]()
 	{
-		UStoreSubsystem* This = WeakThis.Get();
-		if (!IsValid(This))
+		if (BackendStoreItems.IsEmpty())
 		{
-			UE_LOG(LogMolecularUI, Error, TEXT("[%hs] StoreSubsystem is invalid. Unable to load store items."), __FUNCTION__);
-			return;
+			CreateDummyStoreData();
 		}
-		This->CreateDummyStoreData();
 	
 		TArray<TObjectPtr<UItemViewModel>> FilteredItems;
-		FilteredItems.Reserve(This->BackendStoreItems.Num());
+		FilteredItems.Reserve(BackendStoreItems.Num());
 
-		const FString& CurrentFilter = This->StoreViewModel->GetFilterText();
+		const FString& CurrentFilter = StoreViewModel->GetFilterText();
 
 		// We created the BackendStoreItems array with some dummy data during initialization.
 		// In a real application, this data might be first fetched here.
-		for (const FStoreItem& ItemData : This->BackendStoreItems)
+		for (const FStoreItem& ItemData : BackendStoreItems)
 		{
 			if (CurrentFilter.IsEmpty() || ItemData.UIData.DisplayName.ToString().Contains(CurrentFilter))
 			{
-				UItemViewModel* ItemVM = This->GetOrCreateItemViewModel(ItemData);
+				UItemViewModel* ItemVM = GetOrCreateItemViewModel(ItemData);
 				FilteredItems.Add(ItemVM);
 			}
 		}
 
-		This->StoreViewModel->SetAvailableItems(FilteredItems);
-		This->StoreViewModel->SetStoreState(EStoreState::Ready);
-		This->ProcessPendingPurchaseRequests();
-
-	}, /*InRate*/ FMath::RandRange(0.1f, 1.5f), /*bLoops*/ false);
+		StoreViewModel->SetAvailableItems(FilteredItems);
+		StoreViewModel->SetStoreState(EStoreState::Ready);
+	});
+	GetWorld()->GetTimerManager().SetTimer(ItemLoadTimerHandle, ItemLoadDelegate, FMath::RandRange(0.1f, 1.5f), /*bLoops*/ false);
 }
 
 void UStoreSubsystem::LazyLoadOwnedItems()
 {
 	GetWorld()->GetTimerManager().ClearTimer(OwnedItemLoadTimerHandle);
-	TWeakObjectPtr WeakThis(this);
-	GetWorld()->GetTimerManager().SetTimer(OwnedItemLoadTimerHandle, [WeakThis]()
+	FTimerDelegate OwnedItemLoadDelegate;
+	OwnedItemLoadDelegate.BindWeakLambda(this, [this]()
 	{
-		UStoreSubsystem* This = WeakThis.Get();
-		if (!IsValid(This))
+		if (BackendOwnedStoreItems.IsEmpty())
 		{
-			UE_LOG(LogMolecularUI, Error, TEXT("[%hs] StoreSubsystem is invalid. Unable to load owned items."), __FUNCTION__);
-			return;
+			CreateDummyOwnedStoreData();
 		}
 		
-		This->CreateDummyOwnedStoreData();
 		TArray<TObjectPtr<UItemViewModel>> OwnedItemVMs;
-		OwnedItemVMs.Reserve(This->BackendOwnedStoreItems.Num());
+		OwnedItemVMs.Reserve(BackendOwnedStoreItems.Num());
 
-		for (const FStoreItem& OwnedItemData : This->BackendOwnedStoreItems)
+		for (const FStoreItem& OwnedItemData : BackendOwnedStoreItems)
 		{
-			UItemViewModel* ItemVM = This->GetOrCreateItemViewModel(OwnedItemData);
+			UItemViewModel* ItemVM = GetOrCreateItemViewModel(OwnedItemData);
 			OwnedItemVMs.Add(ItemVM);
 		}
 
-		This->StoreViewModel->SetOwnedItems(OwnedItemVMs);
-	}, /*InRate*/ FMath::RandRange(0.1f, 1.5f), /*bLoops*/ false);
+		StoreViewModel->SetOwnedItems(OwnedItemVMs);
+	});
+
+	GetWorld()->GetTimerManager().SetTimer(OwnedItemLoadTimerHandle, OwnedItemLoadDelegate, FMath::RandRange(0.1f, 1.5f), /*bLoops*/ false);
 }
 
 void UStoreSubsystem::LazyLoadStoreCurrency()
 {
 	GetWorld()->GetTimerManager().ClearTimer(CurrencyLoadTimerHandle);
-	TWeakObjectPtr WeakThis(this);
-	GetWorld()->GetTimerManager().SetTimer(CurrencyLoadTimerHandle, [WeakThis]()
+	FTimerDelegate CurrencyLoadDelegate;
+	CurrencyLoadDelegate.BindWeakLambda(this, [this]()
 	{
-		UStoreSubsystem* This = WeakThis.Get();
-		if (!IsValid(This))
+		if (BackendPlayerCurrency < 0)
 		{
-			UE_LOG(LogMolecularUI, Error, TEXT("[%hs] StoreSubsystem is invalid. Unable to load player currency."), __FUNCTION__);
-			return;
+			CreateDummyPlayerCurrency();
 		}
-		This->CreateDummyPlayerCurrency();
-
-		const int32 LoadedCurrency = This->BackendPlayerCurrency;
-		This->StoreViewModel->SetPlayerCurrency(LoadedCurrency);
+		
+		const int32 LoadedCurrency = BackendPlayerCurrency;
+		StoreViewModel->SetPlayerCurrency(LoadedCurrency);
 
 		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Player currency loaded: %d"), __FUNCTION__, LoadedCurrency);
 
-		This->StoreViewModel->SetStoreState(EStoreState::Ready);
-		This->ProcessPendingPurchaseRequests();
-	}, /*InRate*/ FMath::RandRange(0.1f, 1.0f), /*bLoops*/ false);
+		StoreViewModel->SetStoreState(EStoreState::Ready);
+	});
+	GetWorld()->GetTimerManager().SetTimer(CurrencyLoadTimerHandle, CurrencyLoadDelegate, FMath::RandRange(0.1f, 1.5f), /*bLoops*/ false);
 }
 
 void UStoreSubsystem::LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest)
@@ -241,55 +236,45 @@ void UStoreSubsystem::LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest)
 
 	// Clear any pending timer.
 	GetWorld()->GetTimerManager().ClearTimer(ItemPurchaseTimerHandle);
-	TWeakObjectPtr WeakThis(this);
-	GetWorld()->GetTimerManager().SetTimer(ItemPurchaseTimerHandle, [WeakThis, PurchaseRequest]()
+	FTimerDelegate ItemPurchaseDelegate;
+	ItemPurchaseDelegate.BindWeakLambda(this, [this, PurchaseRequest]()
 	{
-		UStoreSubsystem* This = WeakThis.Get();
-		if (!IsValid(This))
-		{
-			UE_LOG(LogMolecularUI, Error, TEXT("[%hs] StoreSubsystem is invalid. Unable to purchase item."), __FUNCTION__);
-			return;
-		}
-		if (!PurchaseRequest.IsValid())
-		{
-			UE_LOG(LogMolecularUI, Error, TEXT("[%hs] PurchaseRequest is invalid. Unable to purchase item."), __FUNCTION__);
-			return;
-		}
-
-		FStoreItem* FoundItem = This->BackendStoreItems.FindByPredicate([&](const FStoreItem& Item)
+		const FStoreItem* FoundItem = BackendStoreItems.FindByPredicate([&](const FStoreItem& Item)
 		{
 			return Item.ItemId == PurchaseRequest.ItemId;
 		});
 
 		if (FoundItem == nullptr)
 		{
-			This->StoreViewModel->SetStoreState(EStoreState::Error);
-			This->StoreViewModel->SetErrorMessage(FText::FromString("Item not found."));
+			StoreViewModel->SetStoreState(EStoreState::Error);
+			StoreViewModel->SetErrorMessage(FText::FromString("Item not found."));
 			return;
 		}
-	   
-		if (This->BackendPlayerCurrency < FoundItem->Cost)
+
+		if (BackendPlayerCurrency < FoundItem->Cost)
 		{
-			This->StoreViewModel->SetStoreState(EStoreState::Error);
-			This->StoreViewModel->SetErrorMessage(FText::FromString("Not enough currency."));
+			StoreViewModel->SetStoreState(EStoreState::Error);
+			StoreViewModel->SetErrorMessage(FText::FromString("Not enough currency."));
 			return;
 		}
 
 		// Simulate a successful purchase
-		This->BackendPlayerCurrency -= FoundItem->Cost;
-		This->BackendOwnedStoreItems.Add(*FoundItem);
-		This->BackendStoreItems.Remove(*FoundItem);
-		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Purchased item: %s for %d currency."), __FUNCTION__, *FoundItem->ItemId.ToString(), FoundItem->Cost);
+		const FStoreItem PurchasedItem = *FoundItem; // Make a copy to avoid reference issues after removal
+		BackendPlayerCurrency -= PurchasedItem.Cost;
+		BackendOwnedStoreItems.Add(PurchasedItem);
+		BackendStoreItems.Remove(PurchasedItem);
+		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Purchased item: %s for %d currency."), __FUNCTION__, *PurchasedItem.ItemId.ToString(), PurchasedItem.Cost);
 	   
-		This->StoreViewModel->SetPlayerCurrency(This->BackendPlayerCurrency);
-		This->StoreViewModel->SetPurchaseRequest(FPurchaseRequest()); // Clear the request
+		StoreViewModel->SetPlayerCurrency(BackendPlayerCurrency);
+		StoreViewModel->SetPurchaseRequest(FPurchaseRequest()); // Clear the request
 	   
-		This->LazyLoadStoreItems(); // Refresh available items
-		This->LazyLoadOwnedItems(); // Refresh owned items
+		LazyLoadStoreItems(); // Refresh available items
+		LazyLoadOwnedItems(); // Refresh owned items
 	   
-		This->StoreViewModel->SetStoreState(EStoreState::Ready);
-
-	}, /*InRate*/ FMath::RandRange(0.1f, 2.0f), /*bLoops*/ false);
+		StoreViewModel->SetStoreState(EStoreState::Ready);
+		ProcessPendingPurchaseRequests();
+	});
+	GetWorld()->GetTimerManager().SetTimer(ItemPurchaseTimerHandle, ItemPurchaseDelegate, FMath::RandRange(0.1f, 1.5f), /*bLoops*/ false);
 }
 
 void UStoreSubsystem::ProcessPendingPurchaseRequests()
@@ -308,7 +293,7 @@ void UStoreSubsystem::ProcessPendingPurchaseRequests()
 
 void UStoreSubsystem::CreateDummyStoreData()
 {
-	BackendStoreItems.Empty(128);;
+	BackendStoreItems.Empty(128);
 	// Initialize with some dummy data for the demo.
 	// This is not good practice for production code
 	// In a real application, this data would come from a database or a backend API

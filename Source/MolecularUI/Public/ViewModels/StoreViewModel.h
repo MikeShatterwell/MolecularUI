@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright Mike Desrosiers, All Rights Reserved.
+
+#pragma once
 
 #include <CoreMinimal.h>
 #include <MVVMViewModelBase.h>

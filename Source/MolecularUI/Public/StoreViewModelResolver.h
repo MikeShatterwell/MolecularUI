@@ -1,13 +1,9 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright Mike Desrosiers, All Rights Reserved.
 
 #pragma once
 
-#include <Blueprint/UserWidget.h>
-
 #include "CoreMinimal.h"
-#include "Subsystems/StoreSubsystem.h"
 #include "View/MVVMViewModelContextResolver.h"
-#include "ViewModels/StoreViewModel.h"
 #include "StoreViewModelResolver.generated.h"
 
 /**
@@ -18,25 +14,5 @@ class MOLECULARUI_API UStoreViewModelResolver : public UMVVMViewModelContextReso
 {
 	GENERATED_BODY()
 
-	virtual UObject* CreateInstance(const UClass* ExpectedType, const UUserWidget* UserWidget, const UMVVMView* View) const override
-	{
-		// Get StoreSubsystem
-		if (const UWorld* World = UserWidget ? UserWidget->GetWorld() : nullptr)
-		{
-			UGameInstance* GameInstance = World->GetGameInstance();
-			if (!ensure(IsValid(GameInstance)))
-			{
-				return nullptr;
-			}
-			
-			UStoreSubsystem* StoreSubsystem = GameInstance->GetSubsystem<UStoreSubsystem>();
-			if (!ensure(IsValid(StoreSubsystem)) || !ensure(StoreSubsystem->Implements<UStoreViewModelProvider>()))
-			{
-				return nullptr;
-			}
-
-			return IStoreViewModelProvider::Execute_GetStoreViewModel(StoreSubsystem);
-		}
-		return nullptr;
-	}
+	virtual UObject* CreateInstance(const UClass* ExpectedType, const UUserWidget* UserWidget, const UMVVMView* View) const override;
 };

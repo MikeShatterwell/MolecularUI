@@ -1,6 +1,9 @@
-﻿#pragma once
+﻿// Copyright Mike Desrosiers, All Rights Reserved.
 
-#include "Subsystems/GameInstanceSubsystem.h"
+#pragma once
+
+#include <Subsystems/GameInstanceSubsystem.h>
+
 #include "IStoreViewModelProvider.h"
 #include "MolecularTypes.h"
 #include "StoreSubsystem.generated.h"

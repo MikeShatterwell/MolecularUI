@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Mike Desrosiers, All Rights Reserved.
 
 #include "MolecularUI.h"
 

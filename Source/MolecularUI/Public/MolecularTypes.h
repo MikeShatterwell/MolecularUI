@@ -1,8 +1,8 @@
-﻿// Copyright Shatterwell Inc. All Rights Reserved.
+﻿// Copyright Mike Desrosiers, All Rights Reserved.
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include <CoreMinimal.h>
 #include "MolecularTypes.generated.h"
 
 UENUM(BlueprintType)
