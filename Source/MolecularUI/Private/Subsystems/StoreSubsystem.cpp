@@ -150,24 +150,18 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 
 void UStoreSubsystem::LazyLoadStoreItems()
 {
-	// Clear any pending timer to avoid multiple requests.
-	GetWorld()->GetTimerManager().ClearTimer(ItemLoadTimerHandle);
+	// 1. Immediately set the UI to a loading state.
+	StoreViewModel->SetStoreState(EStoreState::Loading);
 
-	FTimerDelegate ItemLoadDelegate;
-	ItemLoadDelegate.BindWeakLambda(this, [this]()
+	// 2. Define what should happen on success.
+	auto OnSuccess = [this]
 	{
-		if (BackendStoreItems.IsEmpty())
-		{
-			CreateDummyStoreData();
-		}
-	
+		CreateDummyStoreData();
+
 		TArray<TObjectPtr<UItemViewModel>> FilteredItems;
 		FilteredItems.Reserve(BackendStoreItems.Num());
-
 		const FString& CurrentFilter = StoreViewModel->GetFilterText();
 
-		// We created the BackendStoreItems array with some dummy data during initialization.
-		// In a real application, this data might be first fetched here.
 		for (const FStoreItem& ItemData : BackendStoreItems)
 		{
 			if (CurrentFilter.IsEmpty() || ItemData.UIData.DisplayName.ToString().Contains(CurrentFilter))
@@ -178,22 +172,34 @@ void UStoreSubsystem::LazyLoadStoreItems()
 		}
 
 		StoreViewModel->SetAvailableItems(FilteredItems);
-		StoreViewModel->SetStoreState(EStoreState::Ready);
-	});
-	GetWorld()->GetTimerManager().SetTimer(ItemLoadTimerHandle, ItemLoadDelegate, FMath::RandRange(0.1f, 1.5f), /*bLoops*/ false);
+		StoreViewModel->SetStoreState(EStoreState::Ready); // Set to ready ONLY after success.
+		ProcessPendingPurchaseRequests();
+	};
+
+	// 3. Define what should happen on failure.
+	auto OnFailure = [this]
+	{
+		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Mock failure loading store items."), __FUNCTION__);
+		StoreViewModel->SetErrorMessage(FText::FromString("There was a problem loading items from the store. Please try again later."));
+		StoreViewModel->SetStoreState(EStoreState::Error);
+	};
+
+	// 4. Call the macro with the callbacks and a desired failure chance
+	constexpr float FailureChance = 0.15f;
+	FETCH_MOCK_DATA_WITH_RESULT(ItemLoadTimerHandle, OnSuccess, OnFailure, FailureChance);
 }
 
 void UStoreSubsystem::LazyLoadOwnedItems()
 {
-	GetWorld()->GetTimerManager().ClearTimer(OwnedItemLoadTimerHandle);
-	FTimerDelegate OwnedItemLoadDelegate;
-	OwnedItemLoadDelegate.BindWeakLambda(this, [this]()
+	StoreViewModel->SetStoreState(EStoreState::Loading);
+
+	auto OnSuccess = [this]
 	{
 		if (BackendOwnedStoreItems.IsEmpty())
 		{
 			CreateDummyOwnedStoreData();
 		}
-		
+
 		TArray<TObjectPtr<UItemViewModel>> OwnedItemVMs;
 		OwnedItemVMs.Reserve(BackendOwnedStoreItems.Num());
 
@@ -204,40 +210,53 @@ void UStoreSubsystem::LazyLoadOwnedItems()
 		}
 
 		StoreViewModel->SetOwnedItems(OwnedItemVMs);
-	});
+	};
 
-	GetWorld()->GetTimerManager().SetTimer(OwnedItemLoadTimerHandle, OwnedItemLoadDelegate, FMath::RandRange(0.1f, 1.5f), /*bLoops*/ false);
+	auto OnFailure = [this]
+	{
+		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Mock failure loading owned items."), __FUNCTION__);
+		StoreViewModel->SetErrorMessage(FText::FromString("There was a problem loading owned items. Please try again later."));
+	};
+
+	constexpr float FailureChance = 0.15f; 
+	FETCH_MOCK_DATA_WITH_RESULT(OwnedItemLoadTimerHandle, OnSuccess, OnFailure, FailureChance);
 }
 
 void UStoreSubsystem::LazyLoadStoreCurrency()
 {
-	GetWorld()->GetTimerManager().ClearTimer(CurrencyLoadTimerHandle);
-	FTimerDelegate CurrencyLoadDelegate;
-	CurrencyLoadDelegate.BindWeakLambda(this, [this]()
+	StoreViewModel->SetStoreState(EStoreState::Loading);
+
+	auto OnSuccess = [this]()
 	{
 		if (BackendPlayerCurrency < 0)
 		{
 			CreateDummyPlayerCurrency();
 		}
-		
+
 		const int32 LoadedCurrency = BackendPlayerCurrency;
 		StoreViewModel->SetPlayerCurrency(LoadedCurrency);
 
 		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Player currency loaded: %d"), __FUNCTION__, LoadedCurrency);
-
 		StoreViewModel->SetStoreState(EStoreState::Ready);
-	});
-	GetWorld()->GetTimerManager().SetTimer(CurrencyLoadTimerHandle, CurrencyLoadDelegate, FMath::RandRange(0.1f, 1.5f), /*bLoops*/ false);
+	};
+
+	auto OnFailure = [this]()
+	{
+		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Mock failure loading store currency."), __FUNCTION__);
+		StoreViewModel->SetErrorMessage(FText::FromString("There was a problem loading player currency. Please try again later."));
+		StoreViewModel->SetStoreState(EStoreState::Error);
+	};
+
+	constexpr float FailureChance = 0.15f;
+	FETCH_MOCK_DATA_WITH_RESULT(CurrencyLoadTimerHandle, OnSuccess, OnFailure, FailureChance);
 }
 
 void UStoreSubsystem::LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest)
 {
 	StoreViewModel->SetStoreState(EStoreState::Purchasing);
 
-	// Clear any pending timer.
-	GetWorld()->GetTimerManager().ClearTimer(ItemPurchaseTimerHandle);
-	FTimerDelegate ItemPurchaseDelegate;
-	ItemPurchaseDelegate.BindWeakLambda(this, [this, PurchaseRequest]()
+	// Define what should happen on success.
+	auto OnSuccess = [this, PurchaseRequest]
 	{
 		const FStoreItem* FoundItem = BackendStoreItems.FindByPredicate([&](const FStoreItem& Item)
 		{
@@ -264,17 +283,27 @@ void UStoreSubsystem::LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest)
 		BackendOwnedStoreItems.Add(PurchasedItem);
 		BackendStoreItems.Remove(PurchasedItem);
 		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Purchased item: %s for %d currency."), __FUNCTION__, *PurchasedItem.ItemId.ToString(), PurchasedItem.Cost);
-	   
+
 		StoreViewModel->SetPlayerCurrency(BackendPlayerCurrency);
 		StoreViewModel->SetPurchaseRequest(FPurchaseRequest()); // Clear the request
-	   
+
 		LazyLoadStoreItems(); // Refresh available items
 		LazyLoadOwnedItems(); // Refresh owned items
-	   
+
 		StoreViewModel->SetStoreState(EStoreState::Ready);
 		ProcessPendingPurchaseRequests();
-	});
-	GetWorld()->GetTimerManager().SetTimer(ItemPurchaseTimerHandle, ItemPurchaseDelegate, FMath::RandRange(0.1f, 1.5f), /*bLoops*/ false);
+	};
+
+	// Define what should happen on failure.
+	auto OnFailure = [this]
+	{
+		StoreViewModel->SetStoreState(EStoreState::Error);
+		StoreViewModel->SetErrorMessage(FText::FromString("Purchase failed. Please try again later."));
+	};
+
+	// Simulate purchase with some failure chance.
+	constexpr float FailureChance = 0.15f;
+	FETCH_MOCK_DATA_WITH_RESULT(ItemPurchaseTimerHandle, OnSuccess, OnFailure, FailureChance);
 }
 
 void UStoreSubsystem::ProcessPendingPurchaseRequests()

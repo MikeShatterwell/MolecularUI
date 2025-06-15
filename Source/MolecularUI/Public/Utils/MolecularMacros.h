@@ -5,17 +5,17 @@
 #include <CoreMinimal.h>
 #include <Templates/RemoveReference.h>
 
-/**
- * Binds a member function of the current UObject to a ViewModel's Field-Notify property.
- * Supports both raw pointers (UMyViewModel*) and TObjectPtr<UMyViewModel>.
- * Includes compile-time checks for type safety.
- *
- * @param ViewModel      Pointer or TObjectPtr to the ViewModel instance.
- * @param Property       The name of the property in the ViewModel's FFieldNotificationClassDescriptor.
- * @param Handler        The name of the member function in the current class to bind. Must have signature: void(UObject*, UE::FieldNotification::FFieldId).
- */
 #define UE_MVVM_BIND_FIELD(ViewModel, Property, Handler) \
 do \
+	/**
+	* Binds a member function of the current UObject to a ViewModel's Field-Notify property.
+	* Supports both raw pointers (UMyViewModel*) and TObjectPtr<UMyViewModel>.
+	* Includes compile-time checks for type safety.
+	*
+	* @param ViewModel      Pointer or TObjectPtr to the ViewModel instance.
+	* @param Property       The name of the property in the ViewModel's FFieldNotificationClassDescriptor.
+	* @param Handler        The name of the member function in the current class to bind. Must have signature: void(UObject*, UE::FieldNotification::FFieldId).
+	*/ \
 { \
 	using ViewModelParamType = std::decay_t<decltype(ViewModel)>; \
 	static_assert(UE::MolecularMacros::Private::TIsObjectPointerLike<ViewModelParamType>::value, \
@@ -40,15 +40,15 @@ do \
 	} \
 } while(0)
 
-/**
- * Unbinds the current object ('this') from a specific ViewModel property.
- * The counterpart to UE_MVVM_BIND_FIELD.
- *
- * @param ViewModel      Pointer or TObjectPtr to the ViewModel instance.
- * @param Property       The name of the property in the ViewModel's FFieldNotificationClassDescriptor.
- */
 #define UE_MVVM_UNBIND_FIELD(ViewModel, Property) \
 do \
+	/**
+	* Unbinds the current object ('this') from a specific ViewModel property.
+	* The counterpart to UE_MVVM_BIND_FIELD.
+	*
+	* @param ViewModel	  Pointer or TObjectPtr to the ViewModel instance.
+	* @param Property	   The name of the property in the ViewModel's FFieldNotificationClassDescriptor.
+	*/ \
 { \
 	using ViewModelParamType = std::decay_t<decltype(ViewModel)>; \
 	static_assert(UE::MolecularMacros::Private::TIsObjectPointerLike<ViewModelParamType>::value, \
@@ -68,6 +68,59 @@ do \
 		} \
 	} \
 } while (0)
+
+
+#define FETCH_MOCK_DATA_WITH_RESULT(TimerHandle, SuccessCallback, FailureCallback, ...) \
+do \
+{ \
+	/**
+	* @brief Simulates a data fetch with distinct success and failure outcomes.
+	*
+	* Randomly decides whether the operation succeeds or fails and executes the corresponding callback
+	* after a simulated network delay. This is useful for testing loading and error states in the UI.
+	*
+	* The macro provides flexibility with optional parameters to adjust failure likelihood and network delay.
+	* This can emulate various scenarios to assist debugging and fine-tuning UI behavior.
+	*
+	* @param TimerHandle The FTimerHandle member variable for this operation.
+	* @param SuccessCallback A TFunction<void()> lambda to be called on success.
+	* @param FailureCallback A TFunction<void()> lambda to be called on failure.
+	* @param ... Optional parameters: FailureChance (float, default 0.15f), MinDelay (float, default 0.2f), MaxDelay (float, default 1.8f)
+	*/ \
+	if (UWorld* World = GetWorld()) \
+	{ \
+		World->GetTimerManager().ClearTimer(TimerHandle); \
+		\
+		/* Use a helper lambda to parse optional arguments with default values. */ \
+		auto ArgParser = [](float InFailureChance = 0.15f, float InMinDelay = 0.2f, float InMaxDelay = 1.8f) \
+		{ \
+			return TTuple<float, float, float>(InFailureChance, InMinDelay, InMaxDelay); \
+		}; \
+		const auto ParsedArgs = ArgParser(__VA_ARGS__); \
+		const float FailureChance_Internal = ParsedArgs.Get<0>(); \
+		const float MinDelay_Internal = ParsedArgs.Get<1>(); \
+		const float MaxDelay_Internal = ParsedArgs.Get<2>(); \
+		\
+		FTimerDelegate TimerDelegate; \
+		TimerDelegate.BindWeakLambda(this, [this, SuccessCallback, FailureCallback, FailureChance_Internal]() \
+		{ \
+			/* Randomly decide if the mock request "fails" based on the provided chance */ \
+			if (FMath::FRand() < FailureChance_Internal) \
+			{ \
+				FailureCallback(); \
+			} \
+			else \
+			{ \
+				SuccessCallback(); \
+			} \
+		}); \
+		\
+		const float MockDelay = FMath::RandRange(MinDelay_Internal, MaxDelay_Internal); \
+		World->GetTimerManager().SetTimer(TimerHandle, TimerDelegate, MockDelay, false); \
+	} \
+} \
+while (0)
+
 
 namespace UE::MolecularMacros::Private
 {
