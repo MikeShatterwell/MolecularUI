@@ -2,13 +2,13 @@
 
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "IStoreViewModelProvider.h"
-#include "StoreTypes.h"
+#include "MolecularTypes.h"
 #include "StoreSubsystem.generated.h"
 
 class UItemViewModel;
 class UStoreViewModel;
 
-UCLASS()
+UCLASS(Blueprintable, DisplayName = "Store Mock Data Subsystem")
 class UStoreSubsystem : public UGameInstanceSubsystem, public IStoreViewModelProvider
 {
 	GENERATED_BODY()
@@ -24,6 +24,7 @@ protected:
 	// Reacts to changes in the ViewModel's properties.
 	void OnFilterTextChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
 	void OnPurchaseRequestChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
+	void OnItemInteractionChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
 
 	// Simulates sending and receiving data asynchronously.
 	void LazyLoadStoreItems();

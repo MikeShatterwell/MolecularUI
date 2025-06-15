@@ -3,13 +3,13 @@
 #include <CoreMinimal.h>
 #include <MVVMViewModelBase.h>
 
-#include "StoreTypes.h"
+#include "MolecularTypes.h"
 
 #include "StoreViewModel.generated.h"
 
 class UItemViewModel;
 
-UCLASS(BlueprintType)
+UCLASS(Blueprintable, DisplayName = "Store ViewModel")
 class UStoreViewModel : public UMVVMViewModelBase
 {
 	GENERATED_BODY()
@@ -22,16 +22,16 @@ public:
 	void SetSelectedItem(UItemViewModel* InViewModel) { UE_MVVM_SET_PROPERTY_VALUE(SelectedItem, InViewModel); }
 	UItemViewModel* GetSelectedItem() const { return SelectedItem; }
 
-	void SetPurchaseRequest(const FPurchaseRequest InRequest) { UE_MVVM_SET_PROPERTY_VALUE(PurchaseRequest, InRequest); }
+	void SetPurchaseRequest(const FPurchaseRequest& InRequest) { UE_MVVM_SET_PROPERTY_VALUE(PurchaseRequest, InRequest); }
 	FPurchaseRequest GetPurchaseRequest() const { return PurchaseRequest; }
 
-	void SetAvailableItems(const TArray<UItemViewModel*>& InItems) { UE_MVVM_SET_PROPERTY_VALUE(AvailableItems, InItems); }
-	const TArray<UItemViewModel*>& GetAvailableItems() const { return AvailableItems; }
+	void SetAvailableItems(const TArray<TObjectPtr<UItemViewModel>>& InItems) { UE_MVVM_SET_PROPERTY_VALUE(AvailableItems, InItems); }
+	const TArray<TObjectPtr<UItemViewModel>>& GetAvailableItems() const { return AvailableItems; }
 
-	void SetOwnedItems(const TArray<UItemViewModel*>& InItems) { UE_MVVM_SET_PROPERTY_VALUE(OwnedItems, InItems); }
+	void SetOwnedItems(const TArray<TObjectPtr<UItemViewModel>>& InItems) { UE_MVVM_SET_PROPERTY_VALUE(OwnedItems, InItems); }
 	const TArray<TObjectPtr<UItemViewModel>>& GetOwnedItems() const { return OwnedItems; }
 
-	void SetStoreState(const EStoreState InState) { UE_MVVM_SET_PROPERTY_VALUE(StoreState, InState); }
+	void SetStoreState(const EStoreState& InState) { UE_MVVM_SET_PROPERTY_VALUE(StoreState, InState); }
 	EStoreState GetStoreState() const { return StoreState; }
 
 	void SetFilterText(const FString& InFilterText) { UE_MVVM_SET_PROPERTY_VALUE(FilterText, InFilterText); }
@@ -56,7 +56,7 @@ protected:
 	/* These are the "Intent Channels" that allow the ViewModel to communicate with the Model. */
 	// The UI sets this when the user hovers or selects an item. Other UI elements can bind to this to show details.
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel | Intent")
-	TObjectPtr<UItemViewModel> SelectedItem;
+	TObjectPtr<UItemViewModel> SelectedItem = nullptr;
 
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel | Intent")
 	FPurchaseRequest PurchaseRequest;

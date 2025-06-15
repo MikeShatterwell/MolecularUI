@@ -1,6 +1,7 @@
-﻿#include <TimerManager.h>
+﻿#include "Subsystems/StoreSubsystem.h"
 
-#include "Subsystems/StoreSubsystem.h"
+#include <TimerManager.h>
+
 #include "ViewModels/StoreViewModel.h"
 #include "ViewModels/ItemViewModel.h"
 #include "Utils/MolecularMacros.h"
@@ -29,6 +30,14 @@ void UStoreSubsystem::Deinitialize()
 	UE_MVVM_UNBIND_FIELD(StoreViewModel, PurchaseRequest);
 
 	StoreViewModel = nullptr;
+	for (const auto& Pair : ItemViewModelCache)
+	{
+		if (IsValid(Pair.Value))
+		{
+			// Unbind any field notifications from the ItemViewModel.
+			UE_MVVM_UNBIND_FIELD(Pair.Value, Interaction);
+		}
+	}
 	ItemViewModelCache.Empty();
 
 	BackendStoreItems.Empty();
@@ -68,7 +77,7 @@ void UStoreSubsystem::OnPurchaseRequestChanged(UObject* Object, UE::FieldNotific
 	const FPurchaseRequest& PurchaseRequestId = StoreViewModel->GetPurchaseRequest();
 
 	// Only process valid requests
-	if (PurchaseRequestId.ItemId == NAME_None)
+	if (!PurchaseRequestId.IsValid())
 	{
 		return;
 	}
@@ -92,6 +101,49 @@ void UStoreSubsystem::OnPurchaseRequestChanged(UObject* Object, UE::FieldNotific
 	}
 
 	LazyPurchaseItem(PurchaseRequestId);
+}
+
+void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
+{
+	UItemViewModel* ItemVM = Cast<UItemViewModel>(Object);
+	if (!ensure(IsValid(ItemVM)))
+	{
+		return;
+	}
+
+	const FItemInteraction& Interaction = ItemVM->GetInteraction();
+	if (!Interaction.IsValid())
+	{
+		return; // No valid interaction to process
+	}
+
+	// Handle the interaction based on its type
+	switch (Interaction.Type)
+	{
+	case EItemInteractionType::Hovered:
+		if (GEngine)
+		{
+			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
+			GEngine->AddOnScreenDebugMessage(1, 5.0f, FColor::Yellow, FString::Printf(TEXT("Item Hovered: %s"), *ItemName));
+		}
+		break;
+	case EItemInteractionType::Unhovered:
+		if (GEngine)
+		{
+			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
+			GEngine->AddOnScreenDebugMessage(2, 5.0f, FColor::Yellow, FString::Printf(TEXT("Item UnHovered: %s"), *ItemName));
+		}
+		break;
+	case EItemInteractionType::Clicked:
+		if (GEngine)
+		{
+			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
+			GEngine->AddOnScreenDebugMessage(3, 5.0f, FColor::Yellow, FString::Printf(TEXT("Item Clicked: %s"), *ItemName));
+			StoreViewModel->SetSelectedItem(ItemVM);
+		}
+	default:
+		break;
+	}
 }
 
 void UStoreSubsystem::LazyLoadStoreItems()
@@ -210,7 +262,7 @@ void UStoreSubsystem::ProcessPendingPurchaseRequests()
 		return;
 	}
 
-	const FPurchaseRequest NextRequest = PendingPurchaseRequests[0];
+	const FPurchaseRequest& NextRequest = PendingPurchaseRequests[0];
 	PendingPurchaseRequests.RemoveAt(0);
 
 	// Trigger processing by setting the ViewModel property, which will call OnPurchaseRequestChanged again.
@@ -312,6 +364,9 @@ UItemViewModel* UStoreSubsystem::GetOrCreateItemViewModel(const FStoreItem& Item
 	// If not found or was invalid (e.g. garbage collected), create a new one.
 	UItemViewModel* NewItemVM = NewObject<UItemViewModel>(StoreViewModel);
 	NewItemVM->SetItemData(ItemData);
+
+	// Bind the interaction FieldNotify to the ViewModel's OnItemInteractionChanged handler.
+	UE_MVVM_BIND_FIELD(NewItemVM, Interaction, OnItemInteractionChanged);
 
 	// Add the new ViewModel to the cache for future reuse.
 	ItemViewModelCache.Add(ItemData.ItemId, NewItemVM);

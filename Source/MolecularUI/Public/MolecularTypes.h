@@ -3,9 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "StoreTypes.generated.h"
+#include "MolecularTypes.generated.h"
 
-UENUM()
+UENUM(BlueprintType)
 enum class EStoreState : uint8
 {
 	None,          // No state set
@@ -16,7 +16,7 @@ enum class EStoreState : uint8
 };
 
 // Represents the data only the UI would care about for an item.
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FItemUIData
 {
 	GENERATED_BODY()
@@ -47,6 +47,11 @@ struct FStoreItem
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
 	FItemUIData UIData;
+
+	bool operator==(const FStoreItem& Other) const
+	{
+		return ItemId == Other.ItemId; // Cost and UIData are not considered for equality
+	}
 };
 
 // Represents a user's request to purchase an item.
@@ -66,5 +71,57 @@ struct FPurchaseRequest
 	bool operator==(const FPurchaseRequest& Other) const
 	{
 		return ItemId == Other.ItemId;
+	}
+	
+	bool IsValid() const
+	{
+		return ItemId != NAME_None;
+	}
+};
+
+/** Basic interaction events that widgets can choose to emit. */
+UENUM(BlueprintType)
+enum class EItemInteractionType : uint8
+{
+	None,
+	Hovered,
+	Unhovered,
+	Clicked,
+};
+
+/** Generic stateful channel for communicating simple widget interactions. */
+USTRUCT(BlueprintType)
+struct FItemInteraction
+{
+	GENERATED_BODY()
+
+	FItemInteraction() = default;
+	explicit FItemInteraction(const EItemInteractionType InType)
+			: Type(InType) {}
+
+	/** The latest interaction that occurred. */
+	UPROPERTY(BlueprintReadWrite, Category = "Interaction")
+	EItemInteractionType Type = EItemInteractionType::None;
+
+	bool operator==(const FItemInteraction& Other) const
+	{
+		return Type == Other.Type;
+	}
+
+	bool IsValid() const
+	{
+		return Type != EItemInteractionType::None;
+	}
+
+	FString ToString() const
+	{
+		switch (Type)
+		{
+			case EItemInteractionType::None: return TEXT("None");
+			case EItemInteractionType::Hovered: return TEXT("Hovered");
+			case EItemInteractionType::Unhovered: return TEXT("Unhovered");
+			case EItemInteractionType::Clicked: return TEXT("Clicked");
+			default: return TEXT("Unknown");
+		}
 	}
 };
