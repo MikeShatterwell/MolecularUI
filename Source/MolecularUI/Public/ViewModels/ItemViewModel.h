@@ -8,7 +8,7 @@
 #include "MolecularTypes.h"
 #include "ItemViewModel.generated.h"
 
-UCLASS(Blueprintable, DisplayName = "Item ViewModel", meta = (BlueprintSpawnableComponent))
+UCLASS(Blueprintable, DisplayName = "Item ViewModel")
 class MOLECULARUI_API UItemViewModel : public UMVVMViewModelBase
 {
 	GENERATED_BODY()

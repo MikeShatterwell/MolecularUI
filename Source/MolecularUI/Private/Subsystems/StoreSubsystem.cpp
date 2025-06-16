@@ -172,17 +172,18 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 			                                 FString::Printf(TEXT("Item UnHovered: %s"), *ItemName));
 		}
 		break;
-	case EItemInteractionType::Clicked:
-		if (GEngine)
-		{
-			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
-			GEngine->AddOnScreenDebugMessage(3, 5.0f, FColor::Yellow,
-			                                 FString::Printf(TEXT("Item Clicked: %s"), *ItemName));
-			StoreViewModel->SetSelectedItem(ItemVM);
-		}
-	default:
-		break;
-	}
+       case EItemInteractionType::Clicked:
+               if (GEngine)
+               {
+                       const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
+                       GEngine->AddOnScreenDebugMessage(3, 5.0f, FColor::Yellow,
+                                                        FString::Printf(TEXT("Item Clicked: %s"), *ItemName));
+                       StoreViewModel->SetSelectedItem(ItemVM);
+               }
+               break;
+       default:
+               break;
+       }
 }
 
 void UStoreSubsystem::LazyLoadStoreItems()
