@@ -17,9 +17,9 @@ class MOLECULARUI_API UStoreConversionFunctions : public UBlueprintFunctionLibra
 {
 	GENERATED_BODY()
 
-       UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
-       static bool Conv_HasStoreState(const FGameplayTagContainer& CurrentStoreStates, const FGameplayTag& TestStoreState);
+	UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
+	static bool Conv_HasStoreState(const FGameplayTagContainer& CurrentStoreStates, const FGameplayTag& TestStoreState);
 
 	UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
-        static FText Conv_StoreStateToText(const FGameplayTag& StoreState);
+	static FText Conv_StoreStateToText(const FGameplayTagContainer& CurrentStoreStates);
 }; 

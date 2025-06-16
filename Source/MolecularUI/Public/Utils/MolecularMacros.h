@@ -70,7 +70,7 @@ do \
 } while (0)
 
 
-#define FETCH_MOCK_DATA_WITH_RESULT(TimerHandle, SuccessCallback, FailureCallback, ...) \
+#define FETCH_MOCK_DATA(TimerHandle, SuccessCallback, FailureCallback, ...) \
 do \
 { \
 	/**
@@ -85,14 +85,14 @@ do \
 	* @param TimerHandle The FTimerHandle member variable for this operation.
 	* @param SuccessCallback A TFunction<void()> lambda to be called on success.
 	* @param FailureCallback A TFunction<void()> lambda to be called on failure.
-	* @param ... Optional parameters: FailureChance (float, default 0.15f), MinDelay (float, default 0.2f), MaxDelay (float, default 1.8f)
+	* @param ... Optional parameters: FailureChance (float, default 0.0f), MinDelay (float, default 0.0f), MaxDelay (float, default 0.3f)
 	*/ \
 	if (UWorld* World = GetWorld()) \
 	{ \
 		World->GetTimerManager().ClearTimer(TimerHandle); \
 		\
 		/* Use a helper lambda to parse optional arguments with default values. */ \
-		auto ArgParser = [](float InFailureChance = 0.15f, float InMinDelay = 0.2f, float InMaxDelay = 1.8f) \
+		auto ArgParser = [](float InFailureChance = 0.0f, float InMinDelay = 0.0f, float InMaxDelay = 0.3f) \
 		{ \
 			return TTuple<float, float, float>(InFailureChance, InMinDelay, InMaxDelay); \
 		}; \

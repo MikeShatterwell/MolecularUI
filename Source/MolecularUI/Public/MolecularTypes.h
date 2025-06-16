@@ -3,8 +3,8 @@
 #pragma once
 
 #include <CoreMinimal.h>
+
 #include "MolecularTypes.generated.h"
-#include "MolecularUITags.h"
 
 // Represents the data only the UI would care about for an item.
 USTRUCT(BlueprintType)

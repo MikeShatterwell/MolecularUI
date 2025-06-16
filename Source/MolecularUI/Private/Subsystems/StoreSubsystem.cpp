@@ -7,47 +7,48 @@
 #include "ViewModels/StoreViewModel.h"
 #include "ViewModels/ItemViewModel.h"
 #include "Utils/MolecularMacros.h"
+#include "MolecularUITags.h"
 #include "Utils/LogMolecularUI.h"
 
 namespace
 {
-       /** RAII helper that tracks a store state for the lifetime of an async operation. */
-       struct FScopedStoreState
-       {
-               TWeakObjectPtr<UStoreViewModel> ViewModel;
-               FGameplayTag State;
+	/** RAII helper that tracks a store state for the lifetime of an async operation. */
+	struct FScopedStoreState
+	{
+		TWeakObjectPtr<UStoreViewModel> ViewModel;
+		FGameplayTag State;
 
-               FScopedStoreState(UStoreViewModel* InViewModel, const FGameplayTag& InState)
-                       : ViewModel(InViewModel), State(InState)
-               {
-                       if (ViewModel.IsValid())
-                       {
-                               ViewModel->AddStoreState(State);
-                       }
-               }
+		FScopedStoreState(UStoreViewModel* InViewModel, const FGameplayTag& InState)
+			: ViewModel(InViewModel), State(InState)
+		{
+			if (ViewModel.IsValid())
+			{
+				ViewModel->AddStoreState(State);
+			}
+		}
 
-               ~FScopedStoreState()
-               {
-                       if (ViewModel.IsValid())
-                       {
-                               ViewModel->RemoveStoreState(State);
-                       }
-               }
-       };
+		~FScopedStoreState()
+		{
+			if (ViewModel.IsValid())
+			{
+				ViewModel->RemoveStoreState(State);
+			}
+		}
+	};
 }
 
 void UStoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-       StoreViewModel = NewObject<UStoreViewModel>(this);
+	StoreViewModel = NewObject<UStoreViewModel>(this);
 
-       // Start in a "None" state so initial loads can be triggered on first access.
-       StoreViewModel->AddStoreState(MolecularUI::Tags::State_None);
-	
+	// Start in a "None" state so initial loads can be triggered on first access.
+	StoreViewModel->AddStoreState(MolecularUI::Tags::State_None);
+
 	UE_MVVM_BIND_FIELD(StoreViewModel, FilterText, OnFilterTextChanged);
 	UE_MVVM_BIND_FIELD(StoreViewModel, PurchaseRequest, OnPurchaseRequestChanged);
-	
+
 	PendingPurchaseRequests.Reserve(MaxPendingPurchaseRequestsCount);
 }
 
@@ -87,15 +88,15 @@ UStoreViewModel* UStoreSubsystem::GetStoreViewModel_Implementation()
 		return nullptr;
 	}
 
-       if (StoreViewModel->HasStoreState(MolecularUI::Tags::State_None))
-       {
-               StoreViewModel->RemoveStoreState(MolecularUI::Tags::State_None);
+	if (StoreViewModel->HasStoreState(MolecularUI::Tags::State_None))
+	{
+		StoreViewModel->RemoveStoreState(MolecularUI::Tags::State_None);
 
-               // Load stuff on initial open
-               LazyLoadStoreItems();
-               LazyLoadStoreCurrency();
-               LazyLoadOwnedItems();
-       }
+		// Load stuff on initial open
+		LazyLoadStoreItems();
+		LazyLoadStoreCurrency();
+		LazyLoadOwnedItems();
+	}
 
 	return StoreViewModel;
 }
@@ -115,10 +116,11 @@ void UStoreSubsystem::OnPurchaseRequestChanged(UObject* Object, UE::FieldNotific
 		return;
 	}
 
-       // If the store isn't ready, queue or reset the request and exit early.
-       if (!StoreViewModel->HasStoreState(MolecularUI::Tags::State_Ready))
-       {
-		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Store not ready. Queuing purchase request for %s"), __FUNCTION__, *PurchaseRequestId.ItemId.ToString());
+	// If the store isn't ready, queue or reset the request and exit early.
+	if (!StoreViewModel->HasStoreState(MolecularUI::Tags::State_Ready))
+	{
+		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Store not ready. Queuing purchase request for %s"), __FUNCTION__,
+		       *PurchaseRequestId.ItemId.ToString());
 
 		if (PendingPurchaseRequests.Num() < MaxPendingPurchaseRequestsCount)
 		{
@@ -126,7 +128,8 @@ void UStoreSubsystem::OnPurchaseRequestChanged(UObject* Object, UE::FieldNotific
 		}
 		else
 		{
-			UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Pending purchase queue full. Discarding request for %s"), __FUNCTION__, *PurchaseRequestId.ItemId.ToString());
+			UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Pending purchase queue full. Discarding request for %s"),
+			       __FUNCTION__, *PurchaseRequestId.ItemId.ToString());
 		}
 
 		StoreViewModel->SetPurchaseRequest(FPurchaseRequest());
@@ -157,21 +160,24 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 		if (GEngine)
 		{
 			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
-			GEngine->AddOnScreenDebugMessage(1, 5.0f, FColor::Yellow, FString::Printf(TEXT("Item Hovered: %s"), *ItemName));
+			GEngine->AddOnScreenDebugMessage(1, 5.0f, FColor::Yellow,
+			                                 FString::Printf(TEXT("Item Hovered: %s"), *ItemName));
 		}
 		break;
 	case EItemInteractionType::Unhovered:
 		if (GEngine)
 		{
 			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
-			GEngine->AddOnScreenDebugMessage(2, 5.0f, FColor::Yellow, FString::Printf(TEXT("Item UnHovered: %s"), *ItemName));
+			GEngine->AddOnScreenDebugMessage(2, 5.0f, FColor::Yellow,
+			                                 FString::Printf(TEXT("Item UnHovered: %s"), *ItemName));
 		}
 		break;
 	case EItemInteractionType::Clicked:
 		if (GEngine)
 		{
 			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
-			GEngine->AddOnScreenDebugMessage(3, 5.0f, FColor::Yellow, FString::Printf(TEXT("Item Clicked: %s"), *ItemName));
+			GEngine->AddOnScreenDebugMessage(3, 5.0f, FColor::Yellow,
+			                                 FString::Printf(TEXT("Item Clicked: %s"), *ItemName));
 			StoreViewModel->SetSelectedItem(ItemVM);
 		}
 	default:
@@ -181,11 +187,12 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 
 void UStoreSubsystem::LazyLoadStoreItems()
 {
-       TSharedRef<FScopedStoreState> LoadingScope = MakeShared<FScopedStoreState>(StoreViewModel, MolecularUI::Tags::State_Loading_Items);
+	TSharedRef<FScopedStoreState> LoadingScope = MakeShared<FScopedStoreState>(
+		StoreViewModel, MolecularUI::Tags::State_Loading_Items);
 
 	// 2. Define what should happen on success.
-       auto OnSuccess = [this, LoadingScope]
-       {
+	auto OnSuccess = [this, LoadingScope]
+	{
 		CreateDummyStoreData();
 
 		TArray<TObjectPtr<UItemViewModel>> FilteredItems;
@@ -201,29 +208,33 @@ void UStoreSubsystem::LazyLoadStoreItems()
 			}
 		}
 
-               StoreViewModel->SetAvailableItems(FilteredItems);
-               ProcessPendingPurchaseRequests();
-       };
+		StoreViewModel->SetAvailableItems(FilteredItems);
+		ProcessPendingPurchaseRequests();
+	};
 
 	// 3. Define what should happen on failure.
-       auto OnFailure = [this, LoadingScope]
-       {
+	auto OnFailure = [this, LoadingScope]
+	{
 		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Mock failure loading store items."), __FUNCTION__);
-               StoreViewModel->SetErrorMessage(FText::FromString("There was a problem loading items from the store. Please try again later."));
-               StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
-       };
+		StoreViewModel->SetErrorMessage(
+			FText::FromString("There was a problem loading items from the store. Please try again later."));
+		StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
+	};
 
 	// 4. Call the macro with the callbacks and a desired failure chance
-	constexpr float FailureChance = 0.15f;
-	FETCH_MOCK_DATA_WITH_RESULT(ItemLoadTimerHandle, OnSuccess, OnFailure, FailureChance);
+	//constexpr float FailureChance = 0.15f;
+	//constexpr float MinDelay = 0.15f;
+	//constexpr float MaxDelay = 1.5f;
+	FETCH_MOCK_DATA(ItemLoadTimerHandle, OnSuccess, OnFailure /*FailureChance, MinDelay, MaxDelay*/);
 }
 
 void UStoreSubsystem::LazyLoadOwnedItems()
 {
-       TSharedRef<FScopedStoreState> LoadingScope = MakeShared<FScopedStoreState>(StoreViewModel, MolecularUI::Tags::State_Loading_OwnedItems);
+	TSharedRef<FScopedStoreState> LoadingScope = MakeShared<FScopedStoreState>(
+		StoreViewModel, MolecularUI::Tags::State_Loading_OwnedItems);
 
-       auto OnSuccess = [this, LoadingScope]
-       {
+	auto OnSuccess = [this, LoadingScope]
+	{
 		if (BackendOwnedStoreItems.IsEmpty())
 		{
 			CreateDummyOwnedStoreData();
@@ -241,23 +252,24 @@ void UStoreSubsystem::LazyLoadOwnedItems()
 		StoreViewModel->SetOwnedItems(OwnedItemVMs);
 	};
 
-       auto OnFailure = [this, LoadingScope]
-       {
-               UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Mock failure loading owned items."), __FUNCTION__);
-               StoreViewModel->SetErrorMessage(FText::FromString("There was a problem loading owned items. Please try again later."));
-               StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
-       };
+	auto OnFailure = [this, LoadingScope]
+	{
+		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Mock failure loading owned items."), __FUNCTION__);
+		StoreViewModel->SetErrorMessage(
+			FText::FromString("There was a problem loading owned items. Please try again later."));
+		StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
+	};
 
-	constexpr float FailureChance = 0.15f; 
-	FETCH_MOCK_DATA_WITH_RESULT(OwnedItemLoadTimerHandle, OnSuccess, OnFailure, FailureChance);
+	FETCH_MOCK_DATA(OwnedItemLoadTimerHandle, OnSuccess, OnFailure);
 }
 
 void UStoreSubsystem::LazyLoadStoreCurrency()
 {
-       TSharedRef<FScopedStoreState> LoadingScope = MakeShared<FScopedStoreState>(StoreViewModel, MolecularUI::Tags::State_Loading_Currency);
+	TSharedRef<FScopedStoreState> LoadingScope = MakeShared<FScopedStoreState>(
+		StoreViewModel, MolecularUI::Tags::State_Loading_Currency);
 
-       auto OnSuccess = [this, LoadingScope]()
-       {
+	auto OnSuccess = [this, LoadingScope]()
+	{
 		if (BackendPlayerCurrency < 0)
 		{
 			CreateDummyPlayerCurrency();
@@ -266,27 +278,28 @@ void UStoreSubsystem::LazyLoadStoreCurrency()
 		const int32 LoadedCurrency = BackendPlayerCurrency;
 		StoreViewModel->SetPlayerCurrency(LoadedCurrency);
 
-               UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Player currency loaded: %d"), __FUNCTION__, LoadedCurrency);
-       };
+		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Player currency loaded: %d"), __FUNCTION__, LoadedCurrency);
+	};
 
-       auto OnFailure = [this, LoadingScope]()
-       {
-               UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Mock failure loading store currency."), __FUNCTION__);
-               StoreViewModel->SetErrorMessage(FText::FromString("There was a problem loading player currency. Please try again later."));
-               StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
-       };
+	auto OnFailure = [this, LoadingScope]()
+	{
+		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Mock failure loading store currency."), __FUNCTION__);
+		StoreViewModel->SetErrorMessage(
+			FText::FromString("There was a problem loading player currency. Please try again later."));
+		StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
+	};
 
-	constexpr float FailureChance = 0.15f;
-	FETCH_MOCK_DATA_WITH_RESULT(CurrencyLoadTimerHandle, OnSuccess, OnFailure, FailureChance);
+	FETCH_MOCK_DATA(CurrencyLoadTimerHandle, OnSuccess, OnFailure);
 }
 
 void UStoreSubsystem::LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest)
 {
-       TSharedRef<FScopedStoreState> PurchaseScope = MakeShared<FScopedStoreState>(StoreViewModel, MolecularUI::Tags::State_Purchasing);
+	TSharedRef<FScopedStoreState> PurchaseScope = MakeShared<FScopedStoreState>(
+		StoreViewModel, MolecularUI::Tags::State_Purchasing);
 
 	// Define what should happen on success.
-       auto OnSuccess = [this, PurchaseRequest, PurchaseScope]
-       {
+	auto OnSuccess = [this, PurchaseRequest, PurchaseScope]
+	{
 		const FStoreItem* FoundItem = BackendStoreItems.FindByPredicate([&](const FStoreItem& Item)
 		{
 			return Item.ItemId == PurchaseRequest.ItemId;
@@ -294,24 +307,25 @@ void UStoreSubsystem::LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest)
 
 		if (FoundItem == nullptr)
 		{
-                       StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
-                       StoreViewModel->SetErrorMessage(FText::FromString("Item not found."));
-                       return;
-               }
+			StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
+			StoreViewModel->SetErrorMessage(FText::FromString("Item not found."));
+			return;
+		}
 
 		if (BackendPlayerCurrency < FoundItem->Cost)
 		{
-                       StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
-                       StoreViewModel->SetErrorMessage(FText::FromString("Not enough currency."));
-                       return;
-               }
+			StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
+			StoreViewModel->SetErrorMessage(FText::FromString("Not enough currency."));
+			return;
+		}
 
 		// Simulate a successful purchase
 		const FStoreItem PurchasedItem = *FoundItem; // Make a copy to avoid reference issues after removal
 		BackendPlayerCurrency -= PurchasedItem.Cost;
 		BackendOwnedStoreItems.Add(PurchasedItem);
 		BackendStoreItems.Remove(PurchasedItem);
-		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Purchased item: %s for %d currency."), __FUNCTION__, *PurchasedItem.ItemId.ToString(), PurchasedItem.Cost);
+		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Purchased item: %s for %d currency."), __FUNCTION__,
+		       *PurchasedItem.ItemId.ToString(), PurchasedItem.Cost);
 
 		StoreViewModel->SetPlayerCurrency(BackendPlayerCurrency);
 		StoreViewModel->SetPurchaseRequest(FPurchaseRequest()); // Clear the request
@@ -319,27 +333,26 @@ void UStoreSubsystem::LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest)
 		LazyLoadStoreItems(); // Refresh available items
 		LazyLoadOwnedItems(); // Refresh owned items
 
-               ProcessPendingPurchaseRequests();
-       };
+		ProcessPendingPurchaseRequests();
+	};
 
 	// Define what should happen on failure.
-       auto OnFailure = [this, PurchaseScope]
-       {
-               StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
-               StoreViewModel->SetErrorMessage(FText::FromString("Purchase failed. Please try again later."));
-       };
+	auto OnFailure = [this, PurchaseScope]
+	{
+		StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
+		StoreViewModel->SetErrorMessage(FText::FromString("Purchase failed. Please try again later."));
+	};
 
 	// Simulate purchase with some failure chance.
-	constexpr float FailureChance = 0.15f;
-	FETCH_MOCK_DATA_WITH_RESULT(ItemPurchaseTimerHandle, OnSuccess, OnFailure, FailureChance);
+	FETCH_MOCK_DATA(ItemPurchaseTimerHandle, OnSuccess, OnFailure);
 }
 
 void UStoreSubsystem::ProcessPendingPurchaseRequests()
 {
-       if (!StoreViewModel->HasStoreState(MolecularUI::Tags::State_Ready) || PendingPurchaseRequests.Num() == 0)
-       {
-               return;
-       }
+	if (!StoreViewModel->HasStoreState(MolecularUI::Tags::State_Ready) || PendingPurchaseRequests.Num() == 0)
+	{
+		return;
+	}
 
 	const FPurchaseRequest& NextRequest = PendingPurchaseRequests[0];
 	PendingPurchaseRequests.RemoveAt(0);
@@ -373,64 +386,71 @@ void UStoreSubsystem::CreateDummyStoreData()
 	// In a real application, this data would come from a database or a backend API
 	// Or a more sensible test data architecture.
 	{
-		BackendStoreItems.Add(FStoreItem{FName{"HealthPotion"},		 50,  FItemUIData{INVTEXT("Health Potion")}});
-		BackendStoreItems.Add(FStoreItem{FName{"ManaPotion"},		   30,  FItemUIData{INVTEXT("Mana Potion")}});
-		BackendStoreItems.Add(FStoreItem{FName{"Sword"},			   100,  FItemUIData{INVTEXT("Sword")}});
-		BackendStoreItems.Add(FStoreItem{FName{"Shield"},			  75,   FItemUIData{INVTEXT("Shield")}});
-		BackendStoreItems.Add(FStoreItem{FName{"Bow"},				 120,  FItemUIData{INVTEXT("Bow")}});
-		BackendStoreItems.Add(FStoreItem{FName{"ArrowPack"},		   20,   FItemUIData{INVTEXT("Arrow Pack")}});
-		BackendStoreItems.Add(FStoreItem{FName{"Helmet"},			  60,   FItemUIData{INVTEXT("Helmet")}});
-		BackendStoreItems.Add(FStoreItem{FName{"Armor"},			   150,  FItemUIData{INVTEXT("Armor")}});
-		BackendStoreItems.Add(FStoreItem{FName{"Boots"},			   40,   FItemUIData{INVTEXT("Boots")}});
-		BackendStoreItems.Add(FStoreItem{FName{"Ring"},				80,   FItemUIData{INVTEXT("Ring")}});
-		BackendStoreItems.Add(FStoreItem{FName{"Amulet"},			  90,   FItemUIData{INVTEXT("Amulet")}});
-		BackendStoreItems.Add(FStoreItem{FName{"PotionOfStrength"},	200,  FItemUIData{INVTEXT("Potion of Strength")}});
-		BackendStoreItems.Add(FStoreItem{FName{"PotionOfAgility"},	 150,  FItemUIData{INVTEXT("Potion of Agility")}});
-		BackendStoreItems.Add(FStoreItem{FName{"PotionOfIntelligence"},180,  FItemUIData{INVTEXT("Potion of Intelligence")}});
-		BackendStoreItems.Add(FStoreItem{FName{"ScrollOfFireball"},	250,  FItemUIData{INVTEXT("Scroll of Fireball")}});
-		BackendStoreItems.Add(FStoreItem{FName{"ScrollOfTeleportation"},300, FItemUIData{INVTEXT("Scroll of Teleportation")}});
-		BackendStoreItems.Add(FStoreItem{FName{"ElixirOfLife"},		500,  FItemUIData{INVTEXT("Elixir of Life")}});
-		BackendStoreItems.Add(FStoreItem{FName{"MagicWand"},		   400,  FItemUIData{INVTEXT("Magic Wand")}});
-		BackendStoreItems.Add(FStoreItem{FName{"DragonScale"},		 600,  FItemUIData{INVTEXT("Dragon Scale")}});
-		BackendStoreItems.Add(FStoreItem{FName{"PhoenixFeather"},	  700,  FItemUIData{INVTEXT("Phoenix Feather")}});
-		BackendStoreItems.Add(FStoreItem{FName{"CrystalOfWisdom"},	 800,  FItemUIData{INVTEXT("Crystal of Wisdom")}});
-		BackendStoreItems.Add(FStoreItem{FName{"GoldenApple"},		 900,  FItemUIData{INVTEXT("Golden Apple")}});
-		BackendStoreItems.Add(FStoreItem{FName{"SilverCoin"},		  10,   FItemUIData{INVTEXT("Silver Coin")}});
-		BackendStoreItems.Add(FStoreItem{FName{"BronzeCoin"},		  5,	FItemUIData{INVTEXT("Bronze Coin")}});
-		BackendStoreItems.Add(FStoreItem{FName{"MysticGem"},		   250,  FItemUIData{INVTEXT("Mystic Gem")}});
-		BackendStoreItems.Add(FStoreItem{FName{"EnchantedBook"},	   300,  FItemUIData{INVTEXT("Enchanted Book")}});
-		BackendStoreItems.Add(FStoreItem{FName{"AncientArtifact"},	 1000, FItemUIData{INVTEXT("Ancient Artifact")}});
-		BackendStoreItems.Add(FStoreItem{FName{"HealingHerb"},		 20,   FItemUIData{INVTEXT("Healing Herb")}});
-		BackendStoreItems.Add(FStoreItem{FName{"ManaHerb"},			15,   FItemUIData{INVTEXT("Mana Herb")}});
-		BackendStoreItems.Add(FStoreItem{FName{"StaminaPotion"},	   40,   FItemUIData{INVTEXT("Stamina Potion")}});
-		BackendStoreItems.Add(FStoreItem{FName{"SpeedBoots"},		  70,   FItemUIData{INVTEXT("Speed Boots")}});
-		BackendStoreItems.Add(FStoreItem{FName{"StealthCloak"},		120,  FItemUIData{INVTEXT("Stealth Cloak")}});
-		BackendStoreItems.Add(FStoreItem{FName{"BattleAxe"},		   200,  FItemUIData{INVTEXT("Battle Axe")}});
-		BackendStoreItems.Add(FStoreItem{FName{"Crossbow"},			180,  FItemUIData{INVTEXT("Crossbow")}});
-		BackendStoreItems.Add(FStoreItem{FName{"MagicStaff"},		  350,  FItemUIData{INVTEXT("Magic Staff")}});
-		BackendStoreItems.Add(FStoreItem{FName{"HealingScroll"},	   220,  FItemUIData{INVTEXT("Healing Scroll")}});
-		BackendStoreItems.Add(FStoreItem{FName{"FireBomb"},			150,  FItemUIData{INVTEXT("Fire Bomb")}});
-		BackendStoreItems.Add(FStoreItem{FName{"IceBomb"},			 160,  FItemUIData{INVTEXT("Ice Bomb")}});
-		BackendStoreItems.Add(FStoreItem{FName{"LightningBomb"},	   170,  FItemUIData{INVTEXT("Lightning Bomb")}});
-		BackendStoreItems.Add(FStoreItem{FName{"PoisonBomb"},		  140,  FItemUIData{INVTEXT("Poison Bomb")}});
-		BackendStoreItems.Add(FStoreItem{FName{"TeleportationStone"},  300,  FItemUIData{INVTEXT("Teleportation Stone")}});
-		BackendStoreItems.Add(FStoreItem{FName{"MysticOrb"},		   400,  FItemUIData{INVTEXT("Mystic Orb")}});
-		BackendStoreItems.Add(FStoreItem{FName{"AncientScroll"},	   500,  FItemUIData{INVTEXT("Ancient Scroll")}});
-		BackendStoreItems.Add(FStoreItem{FName{"DragonEgg"},		   1000, FItemUIData{INVTEXT("Dragon Egg")}});
-		BackendStoreItems.Add(FStoreItem{FName{"PhoenixEgg"},		  1200, FItemUIData{INVTEXT("Phoenix Egg")}});
-		BackendStoreItems.Add(FStoreItem{FName{"CrystalBall"},		 600,  FItemUIData{INVTEXT("Crystal Ball")}});
-		BackendStoreItems.Add(FStoreItem{FName{"ElvenBow"},			250,  FItemUIData{INVTEXT("Elven Bow")}});
-		BackendStoreItems.Add(FStoreItem{FName{"DwarvenHammer"},	   300,  FItemUIData{INVTEXT("Dwarven Hammer")}});
-		BackendStoreItems.Add(FStoreItem{FName{"HolyGrail"},		   800,  FItemUIData{INVTEXT("Holy Grail")}});
-		BackendStoreItems.Add(FStoreItem{FName{"CursedDagger"},		400,  FItemUIData{INVTEXT("Cursed Dagger")}});
-		BackendStoreItems.Add(FStoreItem{FName{"VampireFang"},		 450,  FItemUIData{INVTEXT("Vampire Fang")}});
-		BackendStoreItems.Add(FStoreItem{FName{"WerewolfClaw"},		500,  FItemUIData{INVTEXT("Werewolf Claw")}});
+		BackendStoreItems.Add(FStoreItem{FName{"HealthPotion"}, 50, FItemUIData{INVTEXT("Health Potion")}});
+		BackendStoreItems.Add(FStoreItem{FName{"ManaPotion"}, 30, FItemUIData{INVTEXT("Mana Potion")}});
+		BackendStoreItems.Add(FStoreItem{FName{"Sword"}, 100, FItemUIData{INVTEXT("Sword")}});
+		BackendStoreItems.Add(FStoreItem{FName{"Shield"}, 75, FItemUIData{INVTEXT("Shield")}});
+		BackendStoreItems.Add(FStoreItem{FName{"Bow"}, 120, FItemUIData{INVTEXT("Bow")}});
+		BackendStoreItems.Add(FStoreItem{FName{"ArrowPack"}, 20, FItemUIData{INVTEXT("Arrow Pack")}});
+		BackendStoreItems.Add(FStoreItem{FName{"Helmet"}, 60, FItemUIData{INVTEXT("Helmet")}});
+		BackendStoreItems.Add(FStoreItem{FName{"Armor"}, 150, FItemUIData{INVTEXT("Armor")}});
+		BackendStoreItems.Add(FStoreItem{FName{"Boots"}, 40, FItemUIData{INVTEXT("Boots")}});
+		BackendStoreItems.Add(FStoreItem{FName{"Ring"}, 80, FItemUIData{INVTEXT("Ring")}});
+		BackendStoreItems.Add(FStoreItem{FName{"Amulet"}, 90, FItemUIData{INVTEXT("Amulet")}});
+		BackendStoreItems.Add(FStoreItem{FName{"PotionOfStrength"}, 200, FItemUIData{INVTEXT("Potion of Strength")}});
+		BackendStoreItems.Add(FStoreItem{FName{"PotionOfAgility"}, 150, FItemUIData{INVTEXT("Potion of Agility")}});
+		BackendStoreItems.Add(FStoreItem{
+			FName{"PotionOfIntelligence"}, 180, FItemUIData{INVTEXT("Potion of Intelligence")}
+		});
+		BackendStoreItems.Add(FStoreItem{FName{"ScrollOfFireball"}, 250, FItemUIData{INVTEXT("Scroll of Fireball")}});
+		BackendStoreItems.Add(FStoreItem{
+			FName{"ScrollOfTeleportation"}, 300, FItemUIData{INVTEXT("Scroll of Teleportation")}
+		});
+		BackendStoreItems.Add(FStoreItem{FName{"ElixirOfLife"}, 500, FItemUIData{INVTEXT("Elixir of Life")}});
+		BackendStoreItems.Add(FStoreItem{FName{"MagicWand"}, 400, FItemUIData{INVTEXT("Magic Wand")}});
+		BackendStoreItems.Add(FStoreItem{FName{"DragonScale"}, 600, FItemUIData{INVTEXT("Dragon Scale")}});
+		BackendStoreItems.Add(FStoreItem{FName{"PhoenixFeather"}, 700, FItemUIData{INVTEXT("Phoenix Feather")}});
+		BackendStoreItems.Add(FStoreItem{FName{"CrystalOfWisdom"}, 800, FItemUIData{INVTEXT("Crystal of Wisdom")}});
+		BackendStoreItems.Add(FStoreItem{FName{"GoldenApple"}, 900, FItemUIData{INVTEXT("Golden Apple")}});
+		BackendStoreItems.Add(FStoreItem{FName{"SilverCoin"}, 10, FItemUIData{INVTEXT("Silver Coin")}});
+		BackendStoreItems.Add(FStoreItem{FName{"BronzeCoin"}, 5, FItemUIData{INVTEXT("Bronze Coin")}});
+		BackendStoreItems.Add(FStoreItem{FName{"MysticGem"}, 250, FItemUIData{INVTEXT("Mystic Gem")}});
+		BackendStoreItems.Add(FStoreItem{FName{"EnchantedBook"}, 300, FItemUIData{INVTEXT("Enchanted Book")}});
+		BackendStoreItems.Add(FStoreItem{FName{"AncientArtifact"}, 1000, FItemUIData{INVTEXT("Ancient Artifact")}});
+		BackendStoreItems.Add(FStoreItem{FName{"HealingHerb"}, 20, FItemUIData{INVTEXT("Healing Herb")}});
+		BackendStoreItems.Add(FStoreItem{FName{"ManaHerb"}, 15, FItemUIData{INVTEXT("Mana Herb")}});
+		BackendStoreItems.Add(FStoreItem{FName{"StaminaPotion"}, 40, FItemUIData{INVTEXT("Stamina Potion")}});
+		BackendStoreItems.Add(FStoreItem{FName{"SpeedBoots"}, 70, FItemUIData{INVTEXT("Speed Boots")}});
+		BackendStoreItems.Add(FStoreItem{FName{"StealthCloak"}, 120, FItemUIData{INVTEXT("Stealth Cloak")}});
+		BackendStoreItems.Add(FStoreItem{FName{"BattleAxe"}, 200, FItemUIData{INVTEXT("Battle Axe")}});
+		BackendStoreItems.Add(FStoreItem{FName{"Crossbow"}, 180, FItemUIData{INVTEXT("Crossbow")}});
+		BackendStoreItems.Add(FStoreItem{FName{"MagicStaff"}, 350, FItemUIData{INVTEXT("Magic Staff")}});
+		BackendStoreItems.Add(FStoreItem{FName{"HealingScroll"}, 220, FItemUIData{INVTEXT("Healing Scroll")}});
+		BackendStoreItems.Add(FStoreItem{FName{"FireBomb"}, 150, FItemUIData{INVTEXT("Fire Bomb")}});
+		BackendStoreItems.Add(FStoreItem{FName{"IceBomb"}, 160, FItemUIData{INVTEXT("Ice Bomb")}});
+		BackendStoreItems.Add(FStoreItem{FName{"LightningBomb"}, 170, FItemUIData{INVTEXT("Lightning Bomb")}});
+		BackendStoreItems.Add(FStoreItem{FName{"PoisonBomb"}, 140, FItemUIData{INVTEXT("Poison Bomb")}});
+		BackendStoreItems.Add(FStoreItem{
+			FName{"TeleportationStone"}, 300, FItemUIData{INVTEXT("Teleportation Stone")}
+		});
+		BackendStoreItems.Add(FStoreItem{FName{"MysticOrb"}, 400, FItemUIData{INVTEXT("Mystic Orb")}});
+		BackendStoreItems.Add(FStoreItem{FName{"AncientScroll"}, 500, FItemUIData{INVTEXT("Ancient Scroll")}});
+		BackendStoreItems.Add(FStoreItem{FName{"DragonEgg"}, 1000, FItemUIData{INVTEXT("Dragon Egg")}});
+		BackendStoreItems.Add(FStoreItem{FName{"PhoenixEgg"}, 1200, FItemUIData{INVTEXT("Phoenix Egg")}});
+		BackendStoreItems.Add(FStoreItem{FName{"CrystalBall"}, 600, FItemUIData{INVTEXT("Crystal Ball")}});
+		BackendStoreItems.Add(FStoreItem{FName{"ElvenBow"}, 250, FItemUIData{INVTEXT("Elven Bow")}});
+		BackendStoreItems.Add(FStoreItem{FName{"DwarvenHammer"}, 300, FItemUIData{INVTEXT("Dwarven Hammer")}});
+		BackendStoreItems.Add(FStoreItem{FName{"HolyGrail"}, 800, FItemUIData{INVTEXT("Holy Grail")}});
+		BackendStoreItems.Add(FStoreItem{FName{"CursedDagger"}, 400, FItemUIData{INVTEXT("Cursed Dagger")}});
+		BackendStoreItems.Add(FStoreItem{FName{"VampireFang"}, 450, FItemUIData{INVTEXT("Vampire Fang")}});
+		BackendStoreItems.Add(FStoreItem{FName{"WerewolfClaw"}, 500, FItemUIData{INVTEXT("Werewolf Claw")}});
 	}
 }
 
 void UStoreSubsystem::CreateDummyOwnedStoreData()
 {
-	BackendOwnedStoreItems.Empty(32);;
+	// Default owned items for the demo.
+	BackendOwnedStoreItems.Empty(32);
 	BackendOwnedStoreItems.Add(FStoreItem{FName{"LameSword"}, 5, FItemUIData{INVTEXT("Lame Sword")}});
 	BackendOwnedStoreItems.Add(FStoreItem{FName{"BasicShield"}, 10, FItemUIData{INVTEXT("Basic Shield")}});
 	BackendOwnedStoreItems.Add(FStoreItem{FName{"OldHelmet"}, 15, FItemUIData{INVTEXT("Old Helmet")}});
@@ -467,14 +487,14 @@ UItemViewModel* UStoreSubsystem::GetOrCreateItemViewModel(const FStoreItem& Item
 	// Add the new ViewModel to the cache for future reuse.
 	ItemViewModelCache.Add(ItemData.ItemId, NewItemVM);
 
-        return NewItemVM;
+	return NewItemVM;
 }
 
 void UStoreSubsystem::BreakErrorState()
 {
-       if (IsValid(StoreViewModel) && StoreViewModel->HasStoreState(MolecularUI::Tags::State_Error))
-       {
-               StoreViewModel->SetErrorMessage(FText::GetEmpty());
-               StoreViewModel->RemoveStoreState(MolecularUI::Tags::State_Error);
-       }
+	if (IsValid(StoreViewModel) && StoreViewModel->HasStoreState(MolecularUI::Tags::State_Error))
+	{
+		StoreViewModel->SetErrorMessage(FText::GetEmpty());
+		StoreViewModel->RemoveStoreState(MolecularUI::Tags::State_Error);
+	}
 }

@@ -3,20 +3,40 @@
 #include "StoreConversionFunctions.h"
 #include "MolecularUITags.h"
 
-bool UStoreConversionFunctions::Conv_HasStoreState(const FGameplayTagContainer CurrentStoreStates,
-        const FGameplayTag TestStoreState)
+bool UStoreConversionFunctions::Conv_HasStoreState(const FGameplayTagContainer& CurrentStoreStates,
+	const FGameplayTag& TestStoreState)
 {
-        return CurrentStoreStates.HasTagExact(TestStoreState);
+	return CurrentStoreStates.HasTagExact(TestStoreState);
 }
 
-FText UStoreConversionFunctions::Conv_StoreStateToText(const FGameplayTag StoreState)
+FText UStoreConversionFunctions::Conv_StoreStateToText(const FGameplayTagContainer& CurrentStoreStates)
 {
-        if (StoreState == MolecularUI::Tags::State_None) return FText::FromString("None");
-        if (StoreState == MolecularUI::Tags::State_Loading_Items) return FText::FromString("Loading Items");
-        if (StoreState == MolecularUI::Tags::State_Loading_OwnedItems) return FText::FromString("Loading Owned Items");
-        if (StoreState == MolecularUI::Tags::State_Loading_Currency) return FText::FromString("Loading Currency");
-        if (StoreState == MolecularUI::Tags::State_Ready) return FText::FromString("Ready");
-        if (StoreState == MolecularUI::Tags::State_Purchasing) return FText::FromString("Purchasing");
-        if (StoreState == MolecularUI::Tags::State_Error) return FText::FromString("Error");
-        return FText::FromString("Unknown State");
+	
+	FText ResultText;
+
+	if (CurrentStoreStates.Num() == 0)
+	{
+		return FText::FromString("No States");
+	}
+
+	// Map to store counts of each tag
+	TMap<FName, int32> TagCounts;
+	for (const FGameplayTag& Tag : CurrentStoreStates)
+	{
+		TagCounts.FindOrAdd(Tag.GetTagName())++;
+	}
+
+	// Build the output string
+	FString ResultString;
+	for (const auto& TagCountPair : TagCounts)
+	{
+		if (!ResultString.IsEmpty())
+		{
+			ResultString.Append(", ");
+		}
+
+		ResultString.Append(FString::Printf(TEXT("%s (x%d)"), *TagCountPair.Key.ToString(), TagCountPair.Value));
+	}
+
+	return FText::FromString(ResultString);
 }
