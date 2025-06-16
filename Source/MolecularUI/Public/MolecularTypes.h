@@ -4,16 +4,7 @@
 
 #include <CoreMinimal.h>
 #include "MolecularTypes.generated.h"
-
-UENUM(BlueprintType)
-enum class EStoreState : uint8
-{
-	None,          // No state set
-	Loading,       // Loading data
-	Ready,         // Ready for interaction
-	Purchasing,    // In the process of purchasing an item
-	Error          // An error occurred during the process
-};
+#include "MolecularUITags.h"
 
 // Represents the data only the UI would care about for an item.
 USTRUCT(BlueprintType)

@@ -9,11 +9,41 @@
 #include "Utils/MolecularMacros.h"
 #include "Utils/LogMolecularUI.h"
 
+namespace
+{
+       /** RAII helper that tracks a store state for the lifetime of an async operation. */
+       struct FScopedStoreState
+       {
+               TWeakObjectPtr<UStoreViewModel> ViewModel;
+               FGameplayTag State;
+
+               FScopedStoreState(UStoreViewModel* InViewModel, const FGameplayTag& InState)
+                       : ViewModel(InViewModel), State(InState)
+               {
+                       if (ViewModel.IsValid())
+                       {
+                               ViewModel->AddStoreState(State);
+                       }
+               }
+
+               ~FScopedStoreState()
+               {
+                       if (ViewModel.IsValid())
+                       {
+                               ViewModel->RemoveStoreState(State);
+                       }
+               }
+       };
+}
+
 void UStoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	StoreViewModel = NewObject<UStoreViewModel>(this);
+       StoreViewModel = NewObject<UStoreViewModel>(this);
+
+       // Start in a "None" state so initial loads can be triggered on first access.
+       StoreViewModel->AddStoreState(MolecularUI::Tags::State_None);
 	
 	UE_MVVM_BIND_FIELD(StoreViewModel, FilterText, OnFilterTextChanged);
 	UE_MVVM_BIND_FIELD(StoreViewModel, PurchaseRequest, OnPurchaseRequestChanged);
@@ -57,14 +87,15 @@ UStoreViewModel* UStoreSubsystem::GetStoreViewModel_Implementation()
 		return nullptr;
 	}
 
-	if (StoreViewModel->GetStoreState() == EStoreState::None)
-	{
-		StoreViewModel->SetStoreState(EStoreState::Loading);
-		// Load stuff on initial open
-		LazyLoadStoreItems();
-		LazyLoadStoreCurrency();
-		LazyLoadOwnedItems(); 
-	}
+       if (StoreViewModel->HasStoreState(MolecularUI::Tags::State_None))
+       {
+               StoreViewModel->RemoveStoreState(MolecularUI::Tags::State_None);
+
+               // Load stuff on initial open
+               LazyLoadStoreItems();
+               LazyLoadStoreCurrency();
+               LazyLoadOwnedItems();
+       }
 
 	return StoreViewModel;
 }
@@ -84,9 +115,9 @@ void UStoreSubsystem::OnPurchaseRequestChanged(UObject* Object, UE::FieldNotific
 		return;
 	}
 
-	// If the store isn't ready, queue or reset the request and exit early.
-	if (StoreViewModel->GetStoreState() != EStoreState::Ready)
-	{
+       // If the store isn't ready, queue or reset the request and exit early.
+       if (!StoreViewModel->HasStoreState(MolecularUI::Tags::State_Ready))
+       {
 		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Store not ready. Queuing purchase request for %s"), __FUNCTION__, *PurchaseRequestId.ItemId.ToString());
 
 		if (PendingPurchaseRequests.Num() < MaxPendingPurchaseRequestsCount)
@@ -150,12 +181,11 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 
 void UStoreSubsystem::LazyLoadStoreItems()
 {
-	// 1. Immediately set the UI to a loading state.
-	StoreViewModel->SetStoreState(EStoreState::Loading);
+       TSharedRef<FScopedStoreState> LoadingScope = MakeShared<FScopedStoreState>(StoreViewModel, MolecularUI::Tags::State_Loading_Items);
 
 	// 2. Define what should happen on success.
-	auto OnSuccess = [this]
-	{
+       auto OnSuccess = [this, LoadingScope]
+       {
 		CreateDummyStoreData();
 
 		TArray<TObjectPtr<UItemViewModel>> FilteredItems;
@@ -171,18 +201,17 @@ void UStoreSubsystem::LazyLoadStoreItems()
 			}
 		}
 
-		StoreViewModel->SetAvailableItems(FilteredItems);
-		StoreViewModel->SetStoreState(EStoreState::Ready); // Set to ready ONLY after success.
-		ProcessPendingPurchaseRequests();
-	};
+               StoreViewModel->SetAvailableItems(FilteredItems);
+               ProcessPendingPurchaseRequests();
+       };
 
 	// 3. Define what should happen on failure.
-	auto OnFailure = [this]
-	{
+       auto OnFailure = [this, LoadingScope]
+       {
 		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Mock failure loading store items."), __FUNCTION__);
-		StoreViewModel->SetErrorMessage(FText::FromString("There was a problem loading items from the store. Please try again later."));
-		StoreViewModel->SetStoreState(EStoreState::Error);
-	};
+               StoreViewModel->SetErrorMessage(FText::FromString("There was a problem loading items from the store. Please try again later."));
+               StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
+       };
 
 	// 4. Call the macro with the callbacks and a desired failure chance
 	constexpr float FailureChance = 0.15f;
@@ -191,10 +220,10 @@ void UStoreSubsystem::LazyLoadStoreItems()
 
 void UStoreSubsystem::LazyLoadOwnedItems()
 {
-	StoreViewModel->SetStoreState(EStoreState::Loading);
+       TSharedRef<FScopedStoreState> LoadingScope = MakeShared<FScopedStoreState>(StoreViewModel, MolecularUI::Tags::State_Loading_OwnedItems);
 
-	auto OnSuccess = [this]
-	{
+       auto OnSuccess = [this, LoadingScope]
+       {
 		if (BackendOwnedStoreItems.IsEmpty())
 		{
 			CreateDummyOwnedStoreData();
@@ -212,11 +241,12 @@ void UStoreSubsystem::LazyLoadOwnedItems()
 		StoreViewModel->SetOwnedItems(OwnedItemVMs);
 	};
 
-	auto OnFailure = [this]
-	{
-		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Mock failure loading owned items."), __FUNCTION__);
-		StoreViewModel->SetErrorMessage(FText::FromString("There was a problem loading owned items. Please try again later."));
-	};
+       auto OnFailure = [this, LoadingScope]
+       {
+               UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Mock failure loading owned items."), __FUNCTION__);
+               StoreViewModel->SetErrorMessage(FText::FromString("There was a problem loading owned items. Please try again later."));
+               StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
+       };
 
 	constexpr float FailureChance = 0.15f; 
 	FETCH_MOCK_DATA_WITH_RESULT(OwnedItemLoadTimerHandle, OnSuccess, OnFailure, FailureChance);
@@ -224,10 +254,10 @@ void UStoreSubsystem::LazyLoadOwnedItems()
 
 void UStoreSubsystem::LazyLoadStoreCurrency()
 {
-	StoreViewModel->SetStoreState(EStoreState::Loading);
+       TSharedRef<FScopedStoreState> LoadingScope = MakeShared<FScopedStoreState>(StoreViewModel, MolecularUI::Tags::State_Loading_Currency);
 
-	auto OnSuccess = [this]()
-	{
+       auto OnSuccess = [this, LoadingScope]()
+       {
 		if (BackendPlayerCurrency < 0)
 		{
 			CreateDummyPlayerCurrency();
@@ -236,16 +266,15 @@ void UStoreSubsystem::LazyLoadStoreCurrency()
 		const int32 LoadedCurrency = BackendPlayerCurrency;
 		StoreViewModel->SetPlayerCurrency(LoadedCurrency);
 
-		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Player currency loaded: %d"), __FUNCTION__, LoadedCurrency);
-		StoreViewModel->SetStoreState(EStoreState::Ready);
-	};
+               UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Player currency loaded: %d"), __FUNCTION__, LoadedCurrency);
+       };
 
-	auto OnFailure = [this]()
-	{
-		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Mock failure loading store currency."), __FUNCTION__);
-		StoreViewModel->SetErrorMessage(FText::FromString("There was a problem loading player currency. Please try again later."));
-		StoreViewModel->SetStoreState(EStoreState::Error);
-	};
+       auto OnFailure = [this, LoadingScope]()
+       {
+               UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Mock failure loading store currency."), __FUNCTION__);
+               StoreViewModel->SetErrorMessage(FText::FromString("There was a problem loading player currency. Please try again later."));
+               StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
+       };
 
 	constexpr float FailureChance = 0.15f;
 	FETCH_MOCK_DATA_WITH_RESULT(CurrencyLoadTimerHandle, OnSuccess, OnFailure, FailureChance);
@@ -253,11 +282,11 @@ void UStoreSubsystem::LazyLoadStoreCurrency()
 
 void UStoreSubsystem::LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest)
 {
-	StoreViewModel->SetStoreState(EStoreState::Purchasing);
+       TSharedRef<FScopedStoreState> PurchaseScope = MakeShared<FScopedStoreState>(StoreViewModel, MolecularUI::Tags::State_Purchasing);
 
 	// Define what should happen on success.
-	auto OnSuccess = [this, PurchaseRequest]
-	{
+       auto OnSuccess = [this, PurchaseRequest, PurchaseScope]
+       {
 		const FStoreItem* FoundItem = BackendStoreItems.FindByPredicate([&](const FStoreItem& Item)
 		{
 			return Item.ItemId == PurchaseRequest.ItemId;
@@ -265,17 +294,17 @@ void UStoreSubsystem::LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest)
 
 		if (FoundItem == nullptr)
 		{
-			StoreViewModel->SetStoreState(EStoreState::Error);
-			StoreViewModel->SetErrorMessage(FText::FromString("Item not found."));
-			return;
-		}
+                       StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
+                       StoreViewModel->SetErrorMessage(FText::FromString("Item not found."));
+                       return;
+               }
 
 		if (BackendPlayerCurrency < FoundItem->Cost)
 		{
-			StoreViewModel->SetStoreState(EStoreState::Error);
-			StoreViewModel->SetErrorMessage(FText::FromString("Not enough currency."));
-			return;
-		}
+                       StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
+                       StoreViewModel->SetErrorMessage(FText::FromString("Not enough currency."));
+                       return;
+               }
 
 		// Simulate a successful purchase
 		const FStoreItem PurchasedItem = *FoundItem; // Make a copy to avoid reference issues after removal
@@ -290,16 +319,15 @@ void UStoreSubsystem::LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest)
 		LazyLoadStoreItems(); // Refresh available items
 		LazyLoadOwnedItems(); // Refresh owned items
 
-		StoreViewModel->SetStoreState(EStoreState::Ready);
-		ProcessPendingPurchaseRequests();
-	};
+               ProcessPendingPurchaseRequests();
+       };
 
 	// Define what should happen on failure.
-	auto OnFailure = [this]
-	{
-		StoreViewModel->SetStoreState(EStoreState::Error);
-		StoreViewModel->SetErrorMessage(FText::FromString("Purchase failed. Please try again later."));
-	};
+       auto OnFailure = [this, PurchaseScope]
+       {
+               StoreViewModel->AddStoreState(MolecularUI::Tags::State_Error);
+               StoreViewModel->SetErrorMessage(FText::FromString("Purchase failed. Please try again later."));
+       };
 
 	// Simulate purchase with some failure chance.
 	constexpr float FailureChance = 0.15f;
@@ -308,10 +336,10 @@ void UStoreSubsystem::LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest)
 
 void UStoreSubsystem::ProcessPendingPurchaseRequests()
 {
-	if (StoreViewModel->GetStoreState() != EStoreState::Ready || PendingPurchaseRequests.Num() == 0)
-	{
-		return;
-	}
+       if (!StoreViewModel->HasStoreState(MolecularUI::Tags::State_Ready) || PendingPurchaseRequests.Num() == 0)
+       {
+               return;
+       }
 
 	const FPurchaseRequest& NextRequest = PendingPurchaseRequests[0];
 	PendingPurchaseRequests.RemoveAt(0);
@@ -439,5 +467,14 @@ UItemViewModel* UStoreSubsystem::GetOrCreateItemViewModel(const FStoreItem& Item
 	// Add the new ViewModel to the cache for future reuse.
 	ItemViewModelCache.Add(ItemData.ItemId, NewItemVM);
 
-	return NewItemVM;
+        return NewItemVM;
+}
+
+void UStoreSubsystem::BreakErrorState()
+{
+       if (IsValid(StoreViewModel) && StoreViewModel->HasStoreState(MolecularUI::Tags::State_Error))
+       {
+               StoreViewModel->SetErrorMessage(FText::GetEmpty());
+               StoreViewModel->RemoveStoreState(MolecularUI::Tags::State_Error);
+       }
 }

@@ -6,6 +6,7 @@
 #include <Kismet/BlueprintFunctionLibrary.h>
 
 #include "MolecularTypes.h"
+#include "MolecularUITags.h"
 #include "StoreConversionFunctions.generated.h"
 
 /**
@@ -16,9 +17,9 @@ class MOLECULARUI_API UStoreConversionFunctions : public UBlueprintFunctionLibra
 {
 	GENERATED_BODY()
 
-	UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
-	static bool Conv_AreStoreStatesEqual(const EStoreState CurrentStoreState, const EStoreState TestStoreState);
+       UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
+       static bool Conv_HasStoreState(const FGameplayTagContainer& CurrentStoreStates, const FGameplayTag& TestStoreState);
 
 	UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
-	static FText Conv_StoreStateToText(const EStoreState StoreState);
-};
+        static FText Conv_StoreStateToText(const FGameplayTag& StoreState);
+}; 
