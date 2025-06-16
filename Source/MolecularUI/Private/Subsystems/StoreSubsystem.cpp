@@ -195,20 +195,21 @@ void UStoreSubsystem::LazyLoadStoreItems()
 	{
 		CreateDummyStoreData();
 
-		TArray<TObjectPtr<UItemViewModel>> FilteredItems;
-		FilteredItems.Reserve(BackendStoreItems.Num());
-		const FString& CurrentFilter = StoreViewModel->GetFilterText();
+		TArray<TObjectPtr<UItemViewModel>> StoreItems;
+		StoreItems.Reserve(BackendStoreItems.Num());
 
 		for (const FStoreItem& ItemData : BackendStoreItems)
 		{
-			if (CurrentFilter.IsEmpty() || ItemData.UIData.DisplayName.ToString().Contains(CurrentFilter))
+			// Avoid adding items that are already owned.
+			if (BackendOwnedStoreItems.Contains(ItemData))
 			{
-				UItemViewModel* ItemVM = GetOrCreateItemViewModel(ItemData);
-				FilteredItems.Add(ItemVM);
+				continue;
 			}
+			UItemViewModel* ItemVM = GetOrCreateItemViewModel(ItemData);
+			StoreItems.AddUnique(ItemVM);
 		}
 
-		StoreViewModel->SetAvailableItems(FilteredItems);
+		StoreViewModel->SetAvailableItems(StoreItems);
 		ProcessPendingPurchaseRequests();
 	};
 
@@ -246,7 +247,7 @@ void UStoreSubsystem::LazyLoadOwnedItems()
 		for (const FStoreItem& OwnedItemData : BackendOwnedStoreItems)
 		{
 			UItemViewModel* ItemVM = GetOrCreateItemViewModel(OwnedItemData);
-			OwnedItemVMs.Add(ItemVM);
+			OwnedItemVMs.AddUnique(ItemVM);
 		}
 
 		StoreViewModel->SetOwnedItems(OwnedItemVMs);
