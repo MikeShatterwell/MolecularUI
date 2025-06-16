@@ -35,8 +35,9 @@ protected:
 	void LazyLoadOwnedItems();
 	void LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest);
 
-	/** Attempts to process the next queued purchase request when possible. */
+	// Attempts to process the next queued purchase request when possible.
 	void ProcessPendingPurchaseRequests();
+	void FilterAvailableStoreItems(const FString& FilterText);
 
 	// Helper methods to create dummy data for testing purposes.
 	void CreateDummyStoreData();

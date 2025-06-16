@@ -71,7 +71,7 @@ UStoreViewModel* UStoreSubsystem::GetStoreViewModel_Implementation()
 
 void UStoreSubsystem::OnFilterTextChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
 {
-	LazyLoadStoreItems();
+	FilterAvailableStoreItems(StoreViewModel->GetFilterText());
 }
 
 void UStoreSubsystem::OnPurchaseRequestChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
@@ -318,6 +318,23 @@ void UStoreSubsystem::ProcessPendingPurchaseRequests()
 
 	// Trigger processing by setting the ViewModel property, which will call OnPurchaseRequestChanged again.
 	StoreViewModel->SetPurchaseRequest(NextRequest);
+}
+
+void UStoreSubsystem::FilterAvailableStoreItems(const FString& FilterText)
+{
+	TArray<TObjectPtr<UItemViewModel>> FilteredItems;
+	FilteredItems.Reserve(BackendStoreItems.Num());
+
+	for (const FStoreItem& ItemData : BackendStoreItems)
+	{
+		if (FilterText.IsEmpty() || ItemData.UIData.DisplayName.ToString().Contains(FilterText))
+		{
+			UItemViewModel* ItemVM = GetOrCreateItemViewModel(ItemData);
+			FilteredItems.Add(ItemVM);
+		}
+	}
+
+	StoreViewModel->SetAvailableItems(FilteredItems);
 }
 
 void UStoreSubsystem::CreateDummyStoreData()
