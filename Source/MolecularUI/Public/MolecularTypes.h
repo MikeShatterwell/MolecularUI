@@ -27,8 +27,8 @@ struct FStoreItem
 	GENERATED_BODY()
 
 	FStoreItem() = default;
-	FStoreItem(const FName& InId, const int32 InCost, const FItemUIData& InUIData)
-		: ItemId(InId), Cost(InCost), UIData(InUIData) {}
+	FStoreItem(const FName& InId, const int32 InCost, const bool bInIsOwned, const FItemUIData& InUIData)
+		: ItemId(InId), Cost(InCost), bIsOwned(bInIsOwned), UIData(InUIData) {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
 	FName ItemId = NAME_None;
@@ -37,36 +37,57 @@ struct FStoreItem
 	int32 Cost = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
+	bool bIsOwned = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
 	FItemUIData UIData;
 
 	bool operator==(const FStoreItem& Other) const
 	{
-		return ItemId == Other.ItemId; // Cost and UIData are not considered for equality
+		return ItemId == Other.ItemId;
 	}
 };
 
-// Represents a user's request to purchase an item.
+UENUM(BlueprintType)
+enum class ETransactionType : uint8
+{
+	None,
+	Purchase,
+	Sell,
+};
+
+// Represents a user's request to purchase or sell an item.
 // This struct is used for the "Stateful Communication" or "Intent Channel".
 // A NAME_None ItemId means no request is active.
 USTRUCT(BlueprintType)
-struct FPurchaseRequest
+struct FTransactionRequest
 {
 	GENERATED_BODY()
 
-	FPurchaseRequest() = default;
+	FTransactionRequest() = default;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Purchase Request")
+	UPROPERTY(BlueprintReadWrite, Category = "Transaction Request")
 	FName ItemId = NAME_None;
 
+	UPROPERTY(BlueprintReadWrite, Category = "Transaction Request")
+	ETransactionType TransactionType = ETransactionType::None;
+
 	// We need a custom equality operator for UE_MVVM_SET_PROPERTY_VALUE to work.
-	bool operator==(const FPurchaseRequest& Other) const
+	bool operator==(const FTransactionRequest& Other) const
 	{
 		return ItemId == Other.ItemId;
 	}
-	
+
 	bool IsValid() const
 	{
-		return ItemId != NAME_None;
+		return ItemId != NAME_None && TransactionType != ETransactionType::None;
+	}
+
+	FString ToString() const
+	{
+		return FString::Printf(TEXT("TransactionRequest: ItemId=%s, Type=%s"),
+		                       *ItemId.ToString(),
+		                       *UEnum::GetValueAsString(TransactionType));
 	}
 };
 

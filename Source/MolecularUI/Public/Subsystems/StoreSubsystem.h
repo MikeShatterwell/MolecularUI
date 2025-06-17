@@ -30,17 +30,15 @@ public:
 protected:
 	// Reacts to changes in the ViewModel's properties.
 	void OnFilterTextChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
-	void OnPurchaseRequestChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
+	void OnTransactionRequestChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
 	void OnItemInteractionChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
 
 	// Simulates sending and receiving data asynchronously.
 	void LazyLoadStoreItems();
 	void LazyLoadStoreCurrency();
 	void LazyLoadOwnedItems();
-	void LazyPurchaseItem(const FPurchaseRequest& PurchaseRequest);
+	void LazyPurchaseItem(const FTransactionRequest& PurchaseRequest);
 
-	// Attempts to process the next queued purchase request when possible.
-	void ProcessPendingPurchaseRequests();
 	void FilterAvailableStoreItems(const FString& FilterText);
 
 	// Helper methods to create dummy data for testing purposes.
@@ -56,15 +54,6 @@ protected:
 	// Cache for item view models to reduce UObject churn.
 	UPROPERTY(Transient)
 	TMap<FName, TObjectPtr<UItemViewModel>> ItemViewModelCache;
-
-	/**
-	 * Pending purchase requests queued when the store is not ready.
-	 */
-	UPROPERTY(Transient)
-	TArray<FPurchaseRequest> PendingPurchaseRequests;
-
-	UPROPERTY()
-	int32 MaxPendingPurchaseRequestsCount = 5;
 
 	/* The raw "model" data. In a real context, this would come from a database or a backend API. */
 	UPROPERTY(Transient)

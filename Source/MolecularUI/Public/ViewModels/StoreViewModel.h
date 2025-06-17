@@ -18,6 +18,13 @@ class UStoreViewModel : public UMVVMViewModelBase
 	GENERATED_BODY()
 
 public:
+	UFUNCTION(BlueprintCallable, Category = "Store ViewModel")
+	void BreakErrorState()
+	{
+		SetErrorMessage(FText::GetEmpty());
+		RemoveStoreState(MolecularUITags::Store::State_Error);
+	}
+
 	// Setters and Getters
 	void SetPlayerCurrency(const int32 InCurrency) { UE_MVVM_SET_PROPERTY_VALUE(PlayerCurrency, InCurrency); }
 	int32 GetPlayerCurrency() const { return PlayerCurrency; }
@@ -25,8 +32,8 @@ public:
 	void SetSelectedItem(UItemViewModel* InViewModel) { UE_MVVM_SET_PROPERTY_VALUE(SelectedItem, InViewModel); }
 	UItemViewModel* GetSelectedItem() const { return SelectedItem; }
 
-	void SetPurchaseRequest(const FPurchaseRequest& InRequest) { UE_MVVM_SET_PROPERTY_VALUE(PurchaseRequest, InRequest); }
-	FPurchaseRequest GetPurchaseRequest() const { return PurchaseRequest; }
+	void SetTransactionRequest(const FTransactionRequest& InRequest) { UE_MVVM_SET_PROPERTY_VALUE(TransactionRequest, InRequest); }
+	FTransactionRequest GetTransactionRequest() const { return TransactionRequest; }
 
 	void SetAvailableItems(const TArray<TObjectPtr<UItemViewModel>>& InItems) { UE_MVVM_SET_PROPERTY_VALUE(AvailableItems, InItems); }
 	const TArray<TObjectPtr<UItemViewModel>>& GetAvailableItems() const { return AvailableItems; }
@@ -34,32 +41,33 @@ public:
 	void SetOwnedItems(const TArray<TObjectPtr<UItemViewModel>>& InItems) { UE_MVVM_SET_PROPERTY_VALUE(OwnedItems, InItems); }
 	const TArray<TObjectPtr<UItemViewModel>>& GetOwnedItems() const { return OwnedItems; }
 
-       void SetStoreStates(const FGameplayTagContainer& InStates) { UE_MVVM_SET_PROPERTY_VALUE(StoreStates, InStates); }
-       const FGameplayTagContainer& GetStoreStates() const { return StoreStates; }
+	void SetStoreStates(const FGameplayTagContainer& InStates) { UE_MVVM_SET_PROPERTY_VALUE(StoreStates, InStates); }
+	const FGameplayTagContainer& GetStoreStates() const { return StoreStates; }
 
-       void AddStoreState(const FGameplayTag& State)
-       {
-               FGameplayTagContainer NewStates = StoreStates;
-               NewStates.RemoveTag(MolecularUI::Tags::State_Ready);
-               NewStates.AddTag(State);
-               SetStoreStates(NewStates);
-       }
+	void AddStoreState(const FGameplayTag& State)
+	{
+		FGameplayTagContainer NewStates = StoreStates;
+		NewStates.RemoveTag(MolecularUITags::Store::State_Ready);
+		NewStates.AddTag(State);
+		SetStoreStates(NewStates);
+	}
 
-       void RemoveStoreState(const FGameplayTag& State)
-       {
-               FGameplayTagContainer NewStates = StoreStates;
-               NewStates.RemoveTag(State);
-               if (NewStates.Num() == 0)
-               {
-                       NewStates.AddTag(MolecularUI::Tags::State_Ready);
-               }
-               SetStoreStates(NewStates);
-       }
+	void RemoveStoreState(const FGameplayTag& State)
+	{
+		FGameplayTagContainer NewStates = StoreStates;
+		NewStates.RemoveTag(State);
+		if (NewStates.Num() == 0)
+		{
+			NewStates.AddTag(MolecularUITags::Store::State_Ready);
+		}
+		SetStoreStates(NewStates);
+	}
 
-       bool HasStoreState(const FGameplayTag& State) const
-       {
-               return StoreStates.HasTagExact(State);
-       }
+	UFUNCTION(BlueprintPure, Category = "Store ViewModel")
+	bool HasStoreState(const FGameplayTag& State) const
+	{
+		return StoreStates.HasTagExact(State);
+	}
 
 	void SetFilterText(const FString& InFilterText) { UE_MVVM_SET_PROPERTY_VALUE(FilterText, InFilterText); }
 	FString GetFilterText() const { return FilterText; }
@@ -86,15 +94,16 @@ protected:
 	TObjectPtr<UItemViewModel> SelectedItem = nullptr;
 
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel | Intent")
-	FPurchaseRequest PurchaseRequest;
+	FTransactionRequest TransactionRequest;
 
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	FString FilterText;
 
 	/* These are the "Stateful Communication" properties that allow the Model to communicate back to the ViewModel. */
-       UPROPERTY(BlueprintReadWrite, FieldNotify, Setter = SetStoreStates, Getter = GetStoreStates, Category = "Store ViewModel")
-       FGameplayTagContainer StoreStates;
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter = SetStoreStates, Getter = GetStoreStates, Category = "Store ViewModel")
+	FGameplayTagContainer StoreStates;
 	
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	FText ErrorMessage = FText::GetEmpty();
 };
+
