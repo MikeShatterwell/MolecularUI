@@ -40,3 +40,17 @@ FText UStoreConversionFunctions::Conv_StoreStateToText(const FGameplayTagContain
 
 	return FText::FromString(ResultString);
 }
+
+ESlateVisibility UStoreConversionFunctions::Conv_StoreStateToVisibility(const FGameplayTagContainer& CurrentStoreStates,
+	const FGameplayTag& TestStoreState, const ESlateVisibility HasStateVisibility,
+	const ESlateVisibility NoStateVisibility)
+{
+	return CurrentStoreStates.HasTagExact(TestStoreState) ? HasStateVisibility : NoStateVisibility;
+}
+
+ESlateVisibility UStoreConversionFunctions::Conv_StoreTransactionTypeToVisibility(
+	const ETransactionType CurrentTransactionType, const ETransactionType TestTransactionType,
+	const ESlateVisibility TrueVisibility, const ESlateVisibility FalseVisibility)
+{
+	return CurrentTransactionType == TestTransactionType ? TrueVisibility : FalseVisibility;
+}

@@ -10,7 +10,7 @@ namespace MolecularUITags
 	{
 		// Store state tags
 		MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_None);
-		MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Loading_Items);
+		MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Loading_Items); // TODO: Add new tag hierarchy for each loading state
 		MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Loading_OwnedItems);
 		MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Loading_Currency);
 		MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Ready);

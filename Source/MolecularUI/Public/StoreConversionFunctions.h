@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CoreMinimal.h>
+#include <Components/SlateWrapperTypes.h>
 #include <Kismet/BlueprintFunctionLibrary.h>
 
 #include "MolecularTypes.h"
@@ -22,4 +23,18 @@ class MOLECULARUI_API UStoreConversionFunctions : public UBlueprintFunctionLibra
 
 	UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
 	static FText Conv_StoreStateToText(const FGameplayTagContainer& CurrentStoreStates);
+
+	UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
+	static ESlateVisibility Conv_StoreStateToVisibility(
+		const FGameplayTagContainer& CurrentStoreStates, 
+		const FGameplayTag& TestStoreState, 
+		const ESlateVisibility HasStateVisibility = ESlateVisibility::Visible, 
+		const ESlateVisibility NoStateVisibility = ESlateVisibility::Collapsed);
+
+	UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
+	static ESlateVisibility Conv_StoreTransactionTypeToVisibility(
+		const ETransactionType CurrentTransactionType,
+		const ETransactionType TestTransactionType = ETransactionType::None,
+		const ESlateVisibility TrueVisibility = ESlateVisibility::Visible, 
+		const ESlateVisibility FalseVisibility = ESlateVisibility::Collapsed);
 }; 

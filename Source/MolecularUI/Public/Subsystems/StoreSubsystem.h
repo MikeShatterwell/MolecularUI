@@ -33,6 +33,7 @@ protected:
 	// Reacts to changes in the ViewModel's properties.
 	void OnFilterTextChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
 	void OnTransactionRequestChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
+	void OnRefreshRequestedChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
 	void OnItemInteractionChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
 
 	// Simulates sending and receiving data asynchronously.
@@ -53,21 +54,21 @@ protected:
 	UPROPERTY(Transient)
 	TMap<FName, TObjectPtr<UItemViewModel>> ItemViewModelCache;
 
-        /**
-         * Class used to instantiate the data provider. Replace this with your
-         * own UObject class that implements IStoreDataProvider (e.g.
-         * UBackendStoreDataProvider) to integrate a real backend without
-         * modifying the subsystem.
-         */
-        UPROPERTY(EditDefaultsOnly, Category = "Store", meta = (AllowAbstract = true))
-        TSubclassOf<UObject> DataProviderClass = UMockStoreDataProvider::StaticClass();
+	/**
+	 * Class used to instantiate the data provider. Replace this with your
+	 * own UObject class that implements IStoreDataProvider (e.g.
+	 * UBackendStoreDataProvider) to integrate a real backend without
+	 * modifying the subsystem.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Store", meta = (AllowAbstract = true))
+	TSubclassOf<UObject> DataProviderClass = UMockStoreDataProvider::StaticClass();
 
-        /** Instance of the provider created from DataProviderClass. */
-        UPROPERTY(Transient)
-        TObjectPtr<UObject> DataProviderObject = nullptr;
+	/** Instance of the provider created from DataProviderClass. */
+	UPROPERTY(Transient)
+	TObjectPtr<UObject> DataProviderObject = nullptr;
 
-        /** Cached interface pointer to the provider instance. */
-        TScriptInterface<IStoreDataProvider> DataProvider;
+	/** Cached interface pointer to the provider instance. */
+	TScriptInterface<IStoreDataProvider> DataProvider;
 
 
 	/**

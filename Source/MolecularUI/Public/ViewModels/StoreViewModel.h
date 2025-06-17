@@ -68,11 +68,14 @@ public:
 	void SetFilterText(const FString& InFilterText) { UE_MVVM_SET_PROPERTY_VALUE(FilterText, InFilterText); }
 	FString GetFilterText() const { return FilterText; }
 
-        void SetErrorMessage(const FText& InErrorMessage) { UE_MVVM_SET_PROPERTY_VALUE(ErrorMessage, InErrorMessage); }
-        FText GetErrorMessage() const { return ErrorMessage; }
+	void SetRefreshRequested(const bool bInRefreshRequested) { UE_MVVM_SET_PROPERTY_VALUE(bRefreshRequested, bInRefreshRequested); }
+	bool GetRefreshRequested() const { return bRefreshRequested; }
 
-        void SetStatusMessage(const FText& InStatusMessage) { UE_MVVM_SET_PROPERTY_VALUE(StatusMessage, InStatusMessage); }
-        FText GetStatusMessage() const { return StatusMessage; }
+	void SetErrorMessage(const FText& InErrorMessage) { UE_MVVM_SET_PROPERTY_VALUE(ErrorMessage, InErrorMessage); }
+	FText GetErrorMessage() const { return ErrorMessage; }
+
+	void SetStatusMessage(const FText& InStatusMessage) { UE_MVVM_SET_PROPERTY_VALUE(StatusMessage, InStatusMessage); }
+	FText GetStatusMessage() const { return StatusMessage; }
 
 protected:
 	/* These are the "Data Properties" that the ViewModel will expose to the View. */
@@ -90,25 +93,29 @@ protected:
 	/* These are the "Intent Channels" that allow the ViewModel to communicate with the Model. */
 	// The UI sets this when the user hovers or selects an item. Other UI elements can bind to this to show details.
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel | Intent")
-	TObjectPtr<UItemViewModel> SelectedItem = nullptr;
+	FTransactionRequest TransactionRequest;
 
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel | Intent")
-	FTransactionRequest TransactionRequest;
+	FString FilterText;
+
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter = "SetRefreshRequested", Getter = "GetRefreshRequested", Category = "Store ViewModel | Intent")
+	bool bRefreshRequested = false;
+
+	
+	/* These are the "Stateful Communication Channels" that allow the ViewModel to communicate its state. */
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
+	TObjectPtr<UItemViewModel> SelectedItem = nullptr;
 	
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Category = "Transaction Request")
 	ETransactionType TransactionType = ETransactionType::None;
 
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter = SetStoreStates, Getter = GetStoreStates, Category = "Store ViewModel")
+	FGameplayTagContainer StoreStates;
+
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
-	FString FilterText;
+	FText ErrorMessage = FText::GetEmpty();
 
-	/* These are the "Stateful Communication" properties that allow the Model to communicate back to the ViewModel. */
-        UPROPERTY(BlueprintReadWrite, FieldNotify, Setter = SetStoreStates, Getter = GetStoreStates, Category = "Store ViewModel")
-        FGameplayTagContainer StoreStates;
-
-        UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
-        FText ErrorMessage = FText::GetEmpty();
-
-        UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
-        FText StatusMessage = FText::GetEmpty();
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
+	FText StatusMessage = FText::GetEmpty();
 };
 
