@@ -48,7 +48,6 @@ void UStoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	UE_MVVM_BIND_FIELD(StoreViewModel, FilterText, OnFilterTextChanged);
 	UE_MVVM_BIND_FIELD(StoreViewModel, TransactionRequest, OnTransactionRequestChanged);
-
 }
 
 void UStoreSubsystem::Deinitialize()
@@ -131,13 +130,17 @@ void UStoreSubsystem::OnTransactionRequestChanged(UObject* Object, UE::FieldNoti
 		return;
 	}
 
-	switch (TransactionRequest.TransactionType) {
+	switch (StoreViewModel->GetTransactionType())
+	{
 	case ETransactionType::None:
+		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] No transaction type set for request: %s"), __FUNCTION__,
+		       *TransactionRequest.ToString());
 		break;
 	case ETransactionType::Purchase:
 		LazyPurchaseItem(TransactionRequest);
 		break;
 	case ETransactionType::Sell:
+		ensure(false); // Not implemented yet
 		break;
 	}
 }
@@ -175,18 +178,28 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 			                                 FString::Printf(TEXT("Item UnHovered: %s"), *ItemName));
 		}
 		break;
-       case EItemInteractionType::Clicked:
-               if (GEngine)
-               {
-                       const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
-                       GEngine->AddOnScreenDebugMessage(3, 5.0f, FColor::Yellow,
-                                                        FString::Printf(TEXT("Item Clicked: %s"), *ItemName));
-                       StoreViewModel->SetSelectedItem(ItemVM);
-               }
-               break;
-       default:
-               break;
-       }
+	case EItemInteractionType::Clicked:
+		if (GEngine)
+		{
+			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
+			GEngine->AddOnScreenDebugMessage(3, 5.0f, FColor::Yellow,
+			                                 FString::Printf(TEXT("Item Clicked: %s"), *ItemName));
+			StoreViewModel->SetSelectedItem(ItemVM);
+			if (BackendOwnedStoreItems.Contains(ItemVM->GetItemData()))
+			{
+				StoreViewModel->SetTransactionType(ETransactionType::Sell);
+			} else if (BackendStoreItems.Contains(ItemVM->GetItemData()))
+			{
+				StoreViewModel->SetTransactionType(ETransactionType::Purchase);
+			} else
+			{
+				StoreViewModel->SetTransactionType(ETransactionType::None);
+			}
+		}
+		break;
+	default:
+		break;
+	}
 }
 
 void UStoreSubsystem::LazyLoadStoreItems()
@@ -313,7 +326,8 @@ void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseReques
 		if (FoundItem == nullptr)
 		{
 			StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
-			StoreViewModel->SetErrorMessage(FText::FromString("Item not found. It could have been removed from the store's available items."));
+			StoreViewModel->SetErrorMessage(
+				FText::FromString("Item not found. It could have been removed from the store's available items."));
 			return;
 		}
 
@@ -343,6 +357,7 @@ void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseReques
 
 		StoreViewModel->SetPlayerCurrency(BackendPlayerCurrency);
 		StoreViewModel->SetTransactionRequest(FTransactionRequest()); // Clear the request
+		StoreViewModel->SetTransactionType(ETransactionType::None); // Reset transaction type
 		StoreViewModel->SetSelectedItem(nullptr); // Clear the selected item
 
 		LazyLoadStoreItems(); // Refresh available items
@@ -396,22 +411,36 @@ void UStoreSubsystem::CreateDummyStoreData()
 		BackendStoreItems.Add(FStoreItem{FName{"Boots"}, 40, false, FItemUIData{INVTEXT("Boots")}});
 		BackendStoreItems.Add(FStoreItem{FName{"Ring"}, 80, false, FItemUIData{INVTEXT("Ring")}});
 		BackendStoreItems.Add(FStoreItem{FName{"Amulet"}, 90, false, FItemUIData{INVTEXT("Amulet")}});
-		BackendStoreItems.Add(FStoreItem{FName{"PotionOfStrength"}, 200, false, FItemUIData{INVTEXT("Potion of Strength")}});
-		BackendStoreItems.Add(FStoreItem{FName{"PotionOfAgility"}, 150, false, FItemUIData{INVTEXT("Potion of Agility")}});
-		BackendStoreItems.Add(FStoreItem{FName{"PotionOfIntelligence"}, 180, false, FItemUIData{INVTEXT("Potion of Intelligence")}});
-		BackendStoreItems.Add(FStoreItem{FName{"ScrollOfFireball"}, 250, false, FItemUIData{INVTEXT("Scroll of Fireball")}});
-		BackendStoreItems.Add(FStoreItem{FName{"ScrollOfTeleportation"}, 300, false, FItemUIData{INVTEXT("Scroll of Teleportation")}});
+		BackendStoreItems.Add(FStoreItem{
+			FName{"PotionOfStrength"}, 200, false, FItemUIData{INVTEXT("Potion of Strength")}
+		});
+		BackendStoreItems.Add(FStoreItem{
+			FName{"PotionOfAgility"}, 150, false, FItemUIData{INVTEXT("Potion of Agility")}
+		});
+		BackendStoreItems.Add(FStoreItem{
+			FName{"PotionOfIntelligence"}, 180, false, FItemUIData{INVTEXT("Potion of Intelligence")}
+		});
+		BackendStoreItems.Add(FStoreItem{
+			FName{"ScrollOfFireball"}, 250, false, FItemUIData{INVTEXT("Scroll of Fireball")}
+		});
+		BackendStoreItems.Add(FStoreItem{
+			FName{"ScrollOfTeleportation"}, 300, false, FItemUIData{INVTEXT("Scroll of Teleportation")}
+		});
 		BackendStoreItems.Add(FStoreItem{FName{"ElixirOfLife"}, 500, false, FItemUIData{INVTEXT("Elixir of Life")}});
 		BackendStoreItems.Add(FStoreItem{FName{"MagicWand"}, 400, false, FItemUIData{INVTEXT("Magic Wand")}});
 		BackendStoreItems.Add(FStoreItem{FName{"DragonScale"}, 600, false, FItemUIData{INVTEXT("Dragon Scale")}});
 		BackendStoreItems.Add(FStoreItem{FName{"PhoenixFeather"}, 700, false, FItemUIData{INVTEXT("Phoenix Feather")}});
-		BackendStoreItems.Add(FStoreItem{FName{"CrystalOfWisdom"}, 800, false, FItemUIData{INVTEXT("Crystal of Wisdom")}});
+		BackendStoreItems.Add(FStoreItem{
+			FName{"CrystalOfWisdom"}, 800, false, FItemUIData{INVTEXT("Crystal of Wisdom")}
+		});
 		BackendStoreItems.Add(FStoreItem{FName{"GoldenApple"}, 900, false, FItemUIData{INVTEXT("Golden Apple")}});
 		BackendStoreItems.Add(FStoreItem{FName{"SilverCoin"}, 10, false, FItemUIData{INVTEXT("Silver Coin")}});
 		BackendStoreItems.Add(FStoreItem{FName{"BronzeCoin"}, 5, false, FItemUIData{INVTEXT("Bronze Coin")}});
 		BackendStoreItems.Add(FStoreItem{FName{"MysticGem"}, 250, false, FItemUIData{INVTEXT("Mystic Gem")}});
 		BackendStoreItems.Add(FStoreItem{FName{"EnchantedBook"}, 300, false, FItemUIData{INVTEXT("Enchanted Book")}});
-		BackendStoreItems.Add(FStoreItem{FName{"AncientArtifact"}, 1000, false, FItemUIData{INVTEXT("Ancient Artifact")}});
+		BackendStoreItems.Add(FStoreItem{
+			FName{"AncientArtifact"}, 1000, false, FItemUIData{INVTEXT("Ancient Artifact")}
+		});
 		BackendStoreItems.Add(FStoreItem{FName{"HealingHerb"}, 20, false, FItemUIData{INVTEXT("Healing Herb")}});
 		BackendStoreItems.Add(FStoreItem{FName{"ManaHerb"}, 15, false, FItemUIData{INVTEXT("Mana Herb")}});
 		BackendStoreItems.Add(FStoreItem{FName{"StaminaPotion"}, 40, false, FItemUIData{INVTEXT("Stamina Potion")}});
@@ -425,7 +454,9 @@ void UStoreSubsystem::CreateDummyStoreData()
 		BackendStoreItems.Add(FStoreItem{FName{"IceBomb"}, 160, false, FItemUIData{INVTEXT("Ice Bomb")}});
 		BackendStoreItems.Add(FStoreItem{FName{"LightningBomb"}, 170, false, FItemUIData{INVTEXT("Lightning Bomb")}});
 		BackendStoreItems.Add(FStoreItem{FName{"PoisonBomb"}, 140, false, FItemUIData{INVTEXT("Poison Bomb")}});
-		BackendStoreItems.Add(FStoreItem{FName{"TeleportationStone"}, 300, false, FItemUIData{INVTEXT("Teleportation Stone")}});
+		BackendStoreItems.Add(FStoreItem{
+			FName{"TeleportationStone"}, 300, false, FItemUIData{INVTEXT("Teleportation Stone")}
+		});
 		BackendStoreItems.Add(FStoreItem{FName{"MysticOrb"}, 400, false, FItemUIData{INVTEXT("Mystic Orb")}});
 		BackendStoreItems.Add(FStoreItem{FName{"AncientScroll"}, 500, false, FItemUIData{INVTEXT("Ancient Scroll")}});
 		BackendStoreItems.Add(FStoreItem{FName{"DragonEgg"}, 1000, false, FItemUIData{INVTEXT("Dragon Egg")}});

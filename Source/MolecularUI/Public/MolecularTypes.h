@@ -69,9 +69,6 @@ struct FTransactionRequest
 	UPROPERTY(BlueprintReadWrite, Category = "Transaction Request")
 	FName ItemId = NAME_None;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Transaction Request")
-	ETransactionType TransactionType = ETransactionType::None;
-
 	// We need a custom equality operator for UE_MVVM_SET_PROPERTY_VALUE to work.
 	bool operator==(const FTransactionRequest& Other) const
 	{
@@ -80,14 +77,13 @@ struct FTransactionRequest
 
 	bool IsValid() const
 	{
-		return ItemId != NAME_None && TransactionType != ETransactionType::None;
+		return ItemId != NAME_None;
 	}
 
 	FString ToString() const
 	{
-		return FString::Printf(TEXT("TransactionRequest: ItemId=%s, Type=%s"),
-		                       *ItemId.ToString(),
-		                       *UEnum::GetValueAsString(TransactionType));
+		return FString::Printf(TEXT("TransactionRequest: ItemId=%s"),
+		                       *ItemId.ToString());
 	}
 };
 

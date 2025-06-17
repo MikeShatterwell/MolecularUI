@@ -18,13 +18,6 @@ class UStoreViewModel : public UMVVMViewModelBase
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable, Category = "Store ViewModel")
-	void BreakErrorState()
-	{
-		SetErrorMessage(FText::GetEmpty());
-		RemoveStoreState(MolecularUITags::Store::State_Error);
-	}
-
 	// Setters and Getters
 	void SetPlayerCurrency(const int32 InCurrency) { UE_MVVM_SET_PROPERTY_VALUE(PlayerCurrency, InCurrency); }
 	int32 GetPlayerCurrency() const { return PlayerCurrency; }
@@ -34,6 +27,9 @@ public:
 
 	void SetTransactionRequest(const FTransactionRequest& InRequest) { UE_MVVM_SET_PROPERTY_VALUE(TransactionRequest, InRequest); }
 	FTransactionRequest GetTransactionRequest() const { return TransactionRequest; }
+
+	void SetTransactionType(const ETransactionType InType) { UE_MVVM_SET_PROPERTY_VALUE(TransactionType, InType); }
+	ETransactionType GetTransactionType() const { return TransactionType; }
 
 	void SetAvailableItems(const TArray<TObjectPtr<UItemViewModel>>& InItems) { UE_MVVM_SET_PROPERTY_VALUE(AvailableItems, InItems); }
 	const TArray<TObjectPtr<UItemViewModel>>& GetAvailableItems() const { return AvailableItems; }
@@ -95,6 +91,9 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel | Intent")
 	FTransactionRequest TransactionRequest;
+	
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Category = "Transaction Request")
+	ETransactionType TransactionType = ETransactionType::None;
 
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	FString FilterText;

@@ -14,15 +14,15 @@ class UStoreViewModel;
 UCLASS(Blueprintable, DisplayName = "Store Mock Data Subsystem")
 class UStoreSubsystem : public UGameInstanceSubsystem, public IStoreViewModelProvider
 {
-        GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-        virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-        virtual void Deinitialize() override;
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 
-        /** Break out of the error state by clearing the error message and resetting the state. */
-        UFUNCTION(BlueprintCallable, Category = "Store Subsystem")
-        void BreakErrorState();
+	/** Break out of the error state by clearing the error message and resetting the state. */
+	UFUNCTION(BlueprintCallable, Category = "Store Subsystem")
+	void BreakErrorState();
 
 	// IStoreViewModelProvider implementation.
 	virtual UStoreViewModel* GetStoreViewModel_Implementation() override;
