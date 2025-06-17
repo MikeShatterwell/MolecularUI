@@ -6,6 +6,8 @@
 
 #include "IStoreViewModelProvider.h"
 #include "MolecularTypes.h"
+#include "DataProviders/StoreDataProvider.h"
+#include "DataProviders/MockStoreDataProvider.h"
 #include "StoreSubsystem.generated.h"
 
 class UItemViewModel;
@@ -41,10 +43,6 @@ protected:
 
 	void FilterAvailableStoreItems(const FString& FilterText);
 
-	// Helper methods to create dummy data for testing purposes.
-	void CreateDummyStoreData();
-	void CreateDummyOwnedStoreData();
-	void CreateDummyPlayerCurrency();
 
 
 	// The single, authoritative instance of the Store ViewModel.
@@ -55,22 +53,21 @@ protected:
 	UPROPERTY(Transient)
 	TMap<FName, TObjectPtr<UItemViewModel>> ItemViewModelCache;
 
-	/* The raw "model" data. In a real context, this would come from a database or a backend API. */
-	UPROPERTY(Transient)
-	TArray<FStoreItem> BackendStoreItems;
+        /**
+         * Class used to instantiate the data provider. Replace this with your
+         * own UObject class that implements IStoreDataProvider (e.g.
+         * UBackendStoreDataProvider) to integrate a real backend without
+         * modifying the subsystem.
+         */
+        UPROPERTY(EditDefaultsOnly, Category = "Store", meta = (AllowAbstract = true))
+        TSubclassOf<UObject> DataProviderClass = UMockStoreDataProvider::StaticClass();
 
-	UPROPERTY(Transient)
-	TArray<FStoreItem> BackendOwnedStoreItems;
+        /** Instance of the provider created from DataProviderClass. */
+        UPROPERTY(Transient)
+        TObjectPtr<UObject> DataProviderObject = nullptr;
 
-	UPROPERTY(Transient)
-	int32 BackendPlayerCurrency = INDEX_NONE;
-
-
-	/* Timers for simulating lazy loading and purchase operations. */
-	FTimerHandle ItemLoadTimerHandle;
-	FTimerHandle OwnedItemLoadTimerHandle;
-	FTimerHandle CurrencyLoadTimerHandle;
-	FTimerHandle ItemPurchaseTimerHandle;
+        /** Cached interface pointer to the provider instance. */
+        TScriptInterface<IStoreDataProvider> DataProvider;
 
 
 	/**

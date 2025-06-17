@@ -68,8 +68,11 @@ public:
 	void SetFilterText(const FString& InFilterText) { UE_MVVM_SET_PROPERTY_VALUE(FilterText, InFilterText); }
 	FString GetFilterText() const { return FilterText; }
 
-	void SetErrorMessage(const FText& InErrorMessage) { UE_MVVM_SET_PROPERTY_VALUE(ErrorMessage, InErrorMessage); }
-	FText GetErrorMessage() const { return ErrorMessage; }
+        void SetErrorMessage(const FText& InErrorMessage) { UE_MVVM_SET_PROPERTY_VALUE(ErrorMessage, InErrorMessage); }
+        FText GetErrorMessage() const { return ErrorMessage; }
+
+        void SetStatusMessage(const FText& InStatusMessage) { UE_MVVM_SET_PROPERTY_VALUE(StatusMessage, InStatusMessage); }
+        FText GetStatusMessage() const { return StatusMessage; }
 
 protected:
 	/* These are the "Data Properties" that the ViewModel will expose to the View. */
@@ -99,10 +102,13 @@ protected:
 	FString FilterText;
 
 	/* These are the "Stateful Communication" properties that allow the Model to communicate back to the ViewModel. */
-	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter = SetStoreStates, Getter = GetStoreStates, Category = "Store ViewModel")
-	FGameplayTagContainer StoreStates;
-	
-	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
-	FText ErrorMessage = FText::GetEmpty();
+        UPROPERTY(BlueprintReadWrite, FieldNotify, Setter = SetStoreStates, Getter = GetStoreStates, Category = "Store ViewModel")
+        FGameplayTagContainer StoreStates;
+
+        UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
+        FText ErrorMessage = FText::GetEmpty();
+
+        UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
+        FText StatusMessage = FText::GetEmpty();
 };
 
