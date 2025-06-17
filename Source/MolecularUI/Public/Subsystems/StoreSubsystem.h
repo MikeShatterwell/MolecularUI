@@ -50,9 +50,13 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UStoreViewModel> StoreViewModel = nullptr;
 	
-	// Cache for item view models to reduce UObject churn.
-	UPROPERTY(Transient)
-	TMap<FName, TObjectPtr<UItemViewModel>> ItemViewModelCache;
+        // Cache for item view models to reduce UObject churn.
+        UPROPERTY(Transient)
+        TMap<FName, TObjectPtr<UItemViewModel>> ItemViewModelCache;
+
+        // Cached list of store items used for filtering without repeated backend calls.
+        UPROPERTY(Transient)
+        TArray<FStoreItem> CachedStoreItems;
 
 	/**
 	 * Class used to instantiate the data provider. Replace this with your

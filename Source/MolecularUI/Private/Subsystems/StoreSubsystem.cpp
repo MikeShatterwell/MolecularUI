@@ -92,7 +92,8 @@ void UStoreSubsystem::Deinitialize()
 		}
 	}
 	
-	ItemViewModelCache.Empty();
+       ItemViewModelCache.Empty();
+       CachedStoreItems.Empty();
 	
 	DataProvider = nullptr;
 	DataProviderObject = nullptr;
@@ -248,10 +249,11 @@ void UStoreSubsystem::LazyLoadStoreItems()
 	TSharedRef<FScopedStoreState> LoadingScope = MakeShared<FScopedStoreState>(
 	StoreViewModel, MolecularUITags::Store::State_Loading_Items);
 
-	auto OnSuccess = [this, LoadingScope](const TArray<FStoreItem>& Items, const FText& Status)
-	{
-		TArray<TObjectPtr<UItemViewModel>> StoreItems;
-		StoreItems.Reserve(Items.Num());
+       auto OnSuccess = [this, LoadingScope](const TArray<FStoreItem>& Items, const FText& Status)
+       {
+               CachedStoreItems = Items;
+               TArray<TObjectPtr<UItemViewModel>> StoreItems;
+               StoreItems.Reserve(Items.Num());
 
 		for (const FStoreItem& ItemData : Items)
 		{
@@ -365,34 +367,23 @@ void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseReques
 
 void UStoreSubsystem::FilterAvailableStoreItems(const FString& FilterText)
 {
-	auto OnSuccess = [this, FilterText](const TArray<FStoreItem>& Items, const FText& Status)
-	{
-		TArray<TObjectPtr<UItemViewModel>> FilteredItems;
-		FilteredItems.Reserve(Items.Num());
+       if (CachedStoreItems.IsEmpty())
+       {
+               return;
+       }
+       TArray<TObjectPtr<UItemViewModel>> FilteredItems;
+       FilteredItems.Reserve(CachedStoreItems.Num());
 
-		for (const FStoreItem& ItemData : Items)
-		{
-			if (FilterText.IsEmpty() || ItemData.UIData.DisplayName.ToString().Contains(FilterText))
-			{
-				UItemViewModel* ItemVM = GetOrCreateItemViewModel(ItemData);
-				FilteredItems.Add(ItemVM);
-			}
-		}
+       for (const FStoreItem& ItemData : CachedStoreItems)
+       {
+               if (FilterText.IsEmpty() || ItemData.UIData.DisplayName.ToString().Contains(FilterText))
+               {
+                       UItemViewModel* ItemVM = GetOrCreateItemViewModel(ItemData);
+                       FilteredItems.Add(ItemVM);
+               }
+       }
 
-		StoreViewModel->SetAvailableItems(FilteredItems);
-		StoreViewModel->SetStatusMessage(Status);
-	};
-
-	auto OnFailure = [this](const FText& Error)
-	{
-		StoreViewModel->SetErrorMessage(Error);
-		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
-	};
-
-	if (DataProvider)
-	{
-		DataProvider->FetchStoreItems(OnSuccess, OnFailure);
-	}
+       StoreViewModel->SetAvailableItems(FilteredItems);
 }
 
 
