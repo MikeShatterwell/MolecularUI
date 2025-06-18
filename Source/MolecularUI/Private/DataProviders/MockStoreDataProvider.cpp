@@ -168,17 +168,66 @@ void UMockStoreDataProvider::SellItem(const FTransactionRequest& Request, TFunct
 
 void UMockStoreDataProvider::CreateDummyStoreData()
 {
-	BackendStoreItems.Empty(10);
-	BackendStoreItems.Add(FStoreItem{FName{"HealthPotion"}, 50, false, FItemUIData{INVTEXT("Health Potion")}});
-	BackendStoreItems.Add(FStoreItem{FName{"Sword"}, 100, false, FItemUIData{INVTEXT("Sword")}});
-	BackendStoreItems.Add(FStoreItem{FName{"Shield"}, 75, false, FItemUIData{INVTEXT("Shield")}});
+  const int32 NumItems = FMath::Clamp(
+          MolecularUI::CVars::Store::NumDummyItems,
+          1,
+          1000);
+
+  const TArray<FString> Adjectives = {
+          TEXT("Ancient"),
+          TEXT("Mystic"),
+          TEXT("Enchanted"),
+          TEXT("Crimson"),
+          TEXT("Golden"),
+          TEXT("Arcane"),
+          TEXT("Shadow"),
+          TEXT("Emerald"),
+          TEXT("Basic")
+  };
+
+  const TArray<FString> Nouns = {
+          TEXT("Sword"),
+          TEXT("Shield"),
+          TEXT("Potion"),
+          TEXT("Amulet"),
+          TEXT("Bow"),
+          TEXT("Helm"),
+          TEXT("Dagger"),
+          TEXT("Staff"),
+          TEXT("Ring")
+  };
+
+  BackendStoreItems.Empty(NumItems);
+  for (int32 Index = 0; Index < NumItems; ++Index)
+  {
+          const FString Adjective = Adjectives[Index % Adjectives.Num()];
+          const FString Noun = Nouns[Index % Nouns.Num()];
+
+          const FString DisplayName = FString::Printf(TEXT("%s %s"), *Adjective, *Noun);
+          const FString ItemIdString = FString::Printf(TEXT("%s_%s_%d"), *Adjective, *Noun, Index + 1);
+          const int32 Cost = 10 + Index * 5;
+
+          BackendStoreItems.Add(FStoreItem{
+                  FName{*ItemIdString},
+                  Cost,
+                  false,
+                  FItemUIData{FText::FromString(DisplayName)}});
+  }
+
 	bDummyStoreDataInitialized = true;
 }
 
 void UMockStoreDataProvider::CreateDummyOwnedStoreData()
 {
-	BackendOwnedStoreItems.Empty(3);
-	BackendOwnedStoreItems.Add(FStoreItem{FName{"LameSword"}, 5, true, FItemUIData{INVTEXT("Lame Sword")}});
+BackendOwnedStoreItems.Empty(1);
+const FString DisplayName = TEXT("Rusty Sword");
+const FString ItemIdString = TEXT("Rusty_Sword");
+BackendOwnedStoreItems.Add(FStoreItem{
+        FName{*ItemIdString},
+        10,
+        true,
+        FItemUIData{FText::FromString(DisplayName)}});
+
 	bDummyOwnedDataInitialized = true;
 }
 
