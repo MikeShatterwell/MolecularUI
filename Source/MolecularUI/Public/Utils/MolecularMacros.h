@@ -92,16 +92,29 @@ do \
 	{ \
 		World->GetTimerManager().ClearTimer(TimerHandle); \
 		\
-                /* Use a helper lambda to parse optional arguments with default values. */ \
-                auto ArgParser = [](float InFailureChance = MolecularUI::CVars::Default::FailureChance, float InMinDelay = MolecularUI::CVars::Default::MinDelay, float InMaxDelay = MolecularUI::CVars::Default::MaxDelay) \
-                { \
-                        return TTuple<float, float, float>(InFailureChance, InMinDelay, InMaxDelay); \
-                }; \
+		/* Use a helper lambda to parse optional arguments with default values. */ \
+		auto ArgParser = [](float InFailureChance = MolecularUI::CVars::Default::FailureChance, float InMinDelay = MolecularUI::CVars::Default::MinDelay, float InMaxDelay = MolecularUI::CVars::Default::MaxDelay) \
+		{ \
+				return TTuple<float, float, float>(InFailureChance, InMinDelay, InMaxDelay); \
+		}; \
 		const auto ParsedArgs = ArgParser(__VA_ARGS__); \
 		const float FailureChance_Internal = ParsedArgs.Get<0>(); \
 		const float MinDelay_Internal = ParsedArgs.Get<1>(); \
 		const float MaxDelay_Internal = ParsedArgs.Get<2>(); \
 		\
+		if (MinDelay_Internal <= 0.0f && MaxDelay_Internal <= 0.0f) \
+		{ \
+			/* Immediately execute the callback without setting a timer */ \
+			if (FMath::FRand() < FailureChance_Internal) \
+			{ \
+				FailureCallback(); \
+			} \
+			else \
+			{ \
+				SuccessCallback(); \
+			} \
+			return; \
+		} \
 		FTimerDelegate TimerDelegate; \
 		TimerDelegate.BindWeakLambda(this, [this, SuccessCallback, FailureCallback, FailureChance_Internal]() \
 		{ \
