@@ -31,4 +31,8 @@ public:
 	virtual void PurchaseItem(const FTransactionRequest& Request,
 							  TFunction<void(const FText&)> OnSuccess,
 							  TFunction<void(const FText&)> OnFailure) = 0;
+
+	virtual void SellItem(const FTransactionRequest& Request,
+							  TFunction<void(const FText&)> OnSuccess,
+							  TFunction<void(const FText&)> OnFailure) = 0;
 };

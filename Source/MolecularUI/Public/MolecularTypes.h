@@ -18,6 +18,12 @@ struct FItemUIData
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
 	FText DisplayName = FText::FromString("Default Item");
+
+	// Add equality operator for MVVM change detection
+	bool operator==(const FItemUIData& Other) const
+	{
+		return DisplayName.EqualTo(Other.DisplayName);
+	}
 };
 
 // Represents a single item available for purchase in the store.
@@ -44,7 +50,10 @@ struct FStoreItem
 
 	bool operator==(const FStoreItem& Other) const
 	{
-		return ItemId == Other.ItemId;
+		return ItemId == Other.ItemId
+			&& Cost == Other.Cost
+			&& bIsOwned == Other.bIsOwned
+			&& UIData == Other.UIData;
 	}
 };
 
@@ -133,3 +142,4 @@ struct FItemInteraction
 		}
 	}
 };
+

@@ -1,26 +1,43 @@
+// Copyright Mike Desrosiers, All Rights Reserved.
 #pragma once
 
 #include <CoreMinimal.h>
 
+// Example CVar definitions for the MolecularUI demo.
 namespace MolecularUI::CVars
 {
-    extern float DefaultMockFailureChance;
-    extern float DefaultMockMinDelay;
-    extern float DefaultMockMaxDelay;
+	namespace Default
+	{
+		extern float FailureChance;
+		extern float MinDelay;
+		extern float MaxDelay;
+	}
 
-    extern float StoreItemsFailureChance;
-    extern float StoreItemsMinDelay;
-    extern float StoreItemsMaxDelay;
+	namespace Store
+	{
+		extern float FailureChance;
+		extern float MinDelay;
+		extern float MaxDelay;
+	}
 
-    extern float OwnedItemsFailureChance;
-    extern float OwnedItemsMinDelay;
-    extern float OwnedItemsMaxDelay;
+	namespace OwnedItems
+	{
+		extern float FailureChance;
+		extern float MinDelay;
+		extern float MaxDelay;
+	}
 
-    extern float PlayerCurrencyFailureChance;
-    extern float PlayerCurrencyMinDelay;
-    extern float PlayerCurrencyMaxDelay;
+	namespace PlayerCurrency
+	{
+		extern float FailureChance;
+		extern float MinDelay;
+		extern float MaxDelay;
+	}
 
-    extern float PurchaseFailureChance;
-    extern float PurchaseMinDelay;
-    extern float PurchaseMaxDelay;
+	namespace Transaction
+	{
+		extern float FailureChance;
+		extern float MinDelay;
+		extern float MaxDelay;
+	}
 }

@@ -13,6 +13,7 @@ class UMockStoreDataProvider : public UObject, public IStoreDataProvider
 public:
 	void InitializeProvider(UObject* InOuter);
 
+	// Begin IStoreDataProvider implementation
 	virtual void FetchStoreItems(TFunction<void(const TArray<FStoreItem>&, const FText&)> OnSuccess,
 								 TFunction<void(const FText&)> OnFailure) override;
 	virtual void FetchOwnedItems(TFunction<void(const TArray<FStoreItem>&, const FText&)> OnSuccess,
@@ -22,6 +23,10 @@ public:
 	virtual void PurchaseItem(const FTransactionRequest& Request,
 							  TFunction<void(const FText&)> OnSuccess,
 							  TFunction<void(const FText&)> OnFailure) override;
+	virtual void SellItem(const FTransactionRequest& Request,
+							  TFunction<void(const FText&)> OnSuccess,
+							  TFunction<void(const FText&)> OnFailure) override;
+	// End IStoreDataProvider implementation
 
 protected:
 	void CreateDummyStoreData();
@@ -41,6 +46,7 @@ protected:
 	FTimerHandle ItemLoadHandle;
 	FTimerHandle OwnedItemLoadHandle;
 	FTimerHandle CurrencyLoadHandle;
-	FTimerHandle PurchaseHandle;
+	FTimerHandle TransactionHandle;
+	FTimerHandle SellHandle;
 };
 

@@ -13,7 +13,11 @@
 
 namespace
 {
-	/** RAII helper that tracks a store state for the lifetime of an async operation. */
+	/** RAII helper that tracks a store state for the lifetime of an async operation.
+	*
+	* 	TODO: Could be used to create a scoped store state in a more modular way using an interface that the ViewModel implements.
+	* 	Currently relies on UStoreViewModel having the AddStoreState and RemoveStoreState methods as a demo.
+	 */
 	struct FScopedStoreState
 	{
 		TWeakObjectPtr<UStoreViewModel> ViewModel;
@@ -36,10 +40,14 @@ namespace
 			}
 		}
 	};
+
+	#define SCOPED_STORE_STATE(VarName, ViewModelPtr, StateTag) \
+		TSharedRef<FScopedStoreState> VarName = MakeShared<FScopedStoreState>(ViewModelPtr, StateTag)
 }
 
 void UStoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	Super::Initialize(Collection);
 
 		StoreViewModel = NewObject<UStoreViewModel>(this);
@@ -74,6 +82,7 @@ void UStoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UStoreSubsystem::Deinitialize()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
@@ -92,8 +101,8 @@ void UStoreSubsystem::Deinitialize()
 		}
 	}
 	
-       ItemViewModelCache.Empty();
-       CachedStoreItems.Empty();
+	ItemViewModelCache.Empty();
+	CachedStoreItems.Empty();
 	
 	DataProvider = nullptr;
 	DataProviderObject = nullptr;
@@ -103,6 +112,7 @@ void UStoreSubsystem::Deinitialize()
 
 UStoreViewModel* UStoreSubsystem::GetStoreViewModel_Implementation()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	if (!IsValid(StoreViewModel))
 	{
 		UE_LOG(LogMolecularUI, Error, TEXT("[%hs] UStoreSubsystem is not initialized yet!"), __FUNCTION__);
@@ -124,11 +134,13 @@ UStoreViewModel* UStoreSubsystem::GetStoreViewModel_Implementation()
 
 void UStoreSubsystem::OnFilterTextChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	FilterAvailableStoreItems(StoreViewModel->GetFilterText());
 }
 
 void UStoreSubsystem::OnTransactionRequestChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	const FTransactionRequest& TransactionRequest = StoreViewModel->GetTransactionRequest();
 
 	// Only process valid requests.
@@ -161,13 +173,14 @@ void UStoreSubsystem::OnTransactionRequestChanged(UObject* Object, UE::FieldNoti
 		LazyPurchaseItem(TransactionRequest);
 		break;
 	case ETransactionType::Sell:
-		ensure(false); // Not implemented yet
+		LazySellItem(TransactionRequest);
 		break;
 	}
 }
 
 void UStoreSubsystem::OnRefreshRequestedChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	if (StoreViewModel->GetRefreshRequested())
 	{
 		StoreViewModel->SetRefreshRequested(false); // Reset the flag
@@ -187,6 +200,7 @@ void UStoreSubsystem::OnRefreshRequestedChanged(UObject* Object, UE::FieldNotifi
 
 void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	UItemViewModel* ItemVM = Cast<UItemViewModel>(Object);
 	if (!ensure(IsValid(ItemVM)))
 	{
@@ -203,42 +217,33 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 	switch (Interaction.Type)
 	{
 	case EItemInteractionType::Hovered:
-		if (GEngine)
 		{
 			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
-			GEngine->AddOnScreenDebugMessage(1, 5.0f, FColor::Yellow,
-											 FString::Printf(TEXT("Item Hovered: %s"), *ItemName));
+			StoreViewModel->SetStatusMessage(FText::Format(
+				FText::FromString("Hovered over item: {0}"), FText::FromString(ItemName)));
+			break;
 		}
-		break;
 	case EItemInteractionType::Unhovered:
-		if (GEngine)
 		{
-			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
-			GEngine->AddOnScreenDebugMessage(2, 5.0f, FColor::Yellow,
-											 FString::Printf(TEXT("Item UnHovered: %s"), *ItemName));
+			StoreViewModel->SetStatusMessage(FText::GetEmpty());
+			break;
 		}
-		break;
 	case EItemInteractionType::Clicked:
-		if (GEngine)
 		{
 			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
-			GEngine->AddOnScreenDebugMessage(3, 5.0f, FColor::Yellow,
-											 FString::Printf(TEXT("Item Clicked: %s"), *ItemName));
+			StoreViewModel->SetStatusMessage(FText::Format(FText::FromString("Clicked on item: {0}"), FText::FromString(ItemName)));
 			StoreViewModel->SetSelectedItem(ItemVM);
-			if (StoreViewModel->GetOwnedItems().Contains(ItemVM))
+			if (ItemVM->GetItemData().bIsOwned)
 			{
 				StoreViewModel->SetTransactionType(ETransactionType::Sell);
 			}
-			else if (StoreViewModel->GetAvailableItems().Contains(ItemVM))
+			else // Assume the item's available if not owned
 			{
 				StoreViewModel->SetTransactionType(ETransactionType::Purchase);
 			}
-			else
-			{
-				StoreViewModel->SetTransactionType(ETransactionType::None);
-			}
+			break;
 		}
-		break;
+		
 	default:
 		break;
 	}
@@ -246,14 +251,15 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 
 void UStoreSubsystem::LazyLoadStoreItems()
 {
-	TSharedRef<FScopedStoreState> LoadingScope = MakeShared<FScopedStoreState>(
-	StoreViewModel, MolecularUITags::Store::State_Loading_Items);
+	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::Loading::State_Loading_Items);
 
-       auto OnSuccess = [this, LoadingScope](const TArray<FStoreItem>& Items, const FText& Status)
-       {
-               CachedStoreItems = Items;
-               TArray<TObjectPtr<UItemViewModel>> StoreItems;
-               StoreItems.Reserve(Items.Num());
+	auto OnSuccess = [this, LoadingScope](const TArray<FStoreItem>& Items, const FText& Status)
+	{
+		(void)LoadingScope;
+		CachedStoreItems = Items;
+		TArray<TObjectPtr<UItemViewModel>> StoreItems;
+		StoreItems.Reserve(Items.Num());
 
 		for (const FStoreItem& ItemData : Items)
 		{
@@ -268,6 +274,7 @@ void UStoreSubsystem::LazyLoadStoreItems()
 
 	auto OnFailure = [this, LoadingScope](const FText& Error)
 	{
+		(void)LoadingScope;
 		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Failure loading store items."), __FUNCTION__);
 		StoreViewModel->SetErrorMessage(Error);
 		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
@@ -281,18 +288,19 @@ void UStoreSubsystem::LazyLoadStoreItems()
 
 void UStoreSubsystem::LazyLoadOwnedItems()
 {
-	TSharedRef<FScopedStoreState> LoadingScope = MakeShared<FScopedStoreState>(
-	StoreViewModel, MolecularUITags::Store::State_Loading_OwnedItems);
+	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::Loading::State_Loading_OwnedItems);
 
 	auto OnSuccess = [this, LoadingScope](const TArray<FStoreItem>& Items, const FText& Status)
 	{
+		(void)LoadingScope;
 		TArray<TObjectPtr<UItemViewModel>> OwnedItemVMs;
 		OwnedItemVMs.Reserve(Items.Num());
 
 		for (const FStoreItem& OwnedItemData : Items)
-		{
-				UItemViewModel* ItemVM = GetOrCreateItemViewModel(OwnedItemData);
-				OwnedItemVMs.AddUnique(ItemVM);
+		 {
+			UItemViewModel* ItemVM = GetOrCreateItemViewModel(OwnedItemData);
+			OwnedItemVMs.AddUnique(ItemVM);
 		}
 
 		StoreViewModel->SetOwnedItems(OwnedItemVMs);
@@ -301,6 +309,7 @@ void UStoreSubsystem::LazyLoadOwnedItems()
 
 	auto OnFailure = [this, LoadingScope](const FText& Error)
 	{
+		(void)LoadingScope;
 		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Failure loading owned items."), __FUNCTION__);
 		StoreViewModel->SetErrorMessage(Error);
 		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
@@ -314,11 +323,12 @@ void UStoreSubsystem::LazyLoadOwnedItems()
 
 void UStoreSubsystem::LazyLoadStoreCurrency()
 {
-	TSharedRef<FScopedStoreState> LoadingScope = MakeShared<FScopedStoreState>(
-	StoreViewModel, MolecularUITags::Store::State_Loading_Currency);
+	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::Loading::State_Loading_Currency);
 
 	auto OnSuccess = [this, LoadingScope](int32 Currency, const FText& Status)
 	{
+		(void)LoadingScope;
 		StoreViewModel->SetPlayerCurrency(Currency);
 		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Player currency loaded: %d"), __FUNCTION__, Currency);
 		StoreViewModel->SetStatusMessage(Status);
@@ -326,6 +336,7 @@ void UStoreSubsystem::LazyLoadStoreCurrency()
 
 	auto OnFailure = [this, LoadingScope](const FText& Error)
 	{
+		(void)LoadingScope;
 		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Failure loading store currency."), __FUNCTION__);
 		StoreViewModel->SetErrorMessage(Error);
 		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
@@ -339,22 +350,25 @@ void UStoreSubsystem::LazyLoadStoreCurrency()
 
 void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseRequest)
 {
-	TSharedRef<FScopedStoreState> PurchaseScope = MakeShared<FScopedStoreState>(
-	StoreViewModel, MolecularUITags::Store::State_Purchasing);
+	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	SCOPED_STORE_STATE(PurchaseScope, StoreViewModel, MolecularUITags::Store::State_Purchasing);
 
-	auto OnSuccess = [this, PurchaseScope](const FText& Status)
+	auto OnSuccess = [this, PurchaseScope, &PurchaseRequest](const FText& Status)
 	{
+		(void)PurchaseScope;
 		StoreViewModel->SetTransactionRequest(FTransactionRequest());
 		StoreViewModel->SetTransactionType(ETransactionType::None);
 		StoreViewModel->SetSelectedItem(nullptr);
 
 		LazyLoadStoreItems();
 		LazyLoadOwnedItems();
+		LazyLoadStoreCurrency();
 		StoreViewModel->SetStatusMessage(Status);
 	};
 
 	auto OnFailure = [this, PurchaseScope](const FText& Error)
 	{
+		(void)PurchaseScope;
 		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
 		StoreViewModel->SetErrorMessage(Error);
 	};
@@ -365,27 +379,62 @@ void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseReques
 	}
 }
 
-void UStoreSubsystem::FilterAvailableStoreItems(const FString& FilterText)
+void UStoreSubsystem::LazySellItem(const FTransactionRequest& TransactionRequest)
 {
-       if (CachedStoreItems.IsEmpty())
-       {
-               return;
-       }
-       TArray<TObjectPtr<UItemViewModel>> FilteredItems;
-       FilteredItems.Reserve(CachedStoreItems.Num());
+	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	SCOPED_STORE_STATE(SellScope, StoreViewModel, MolecularUITags::Store::State_Selling);
 
-       for (const FStoreItem& ItemData : CachedStoreItems)
-       {
-               if (FilterText.IsEmpty() || ItemData.UIData.DisplayName.ToString().Contains(FilterText))
-               {
-                       UItemViewModel* ItemVM = GetOrCreateItemViewModel(ItemData);
-                       FilteredItems.Add(ItemVM);
-               }
-       }
+	auto OnSuccess = [this, SellScope](const FText& Status)
+	{
+		(void)SellScope;
+		StoreViewModel->SetTransactionRequest(FTransactionRequest());
+		StoreViewModel->SetTransactionType(ETransactionType::None);
+		StoreViewModel->SetSelectedItem(nullptr);
 
-       StoreViewModel->SetAvailableItems(FilteredItems);
+		LazyLoadStoreItems();
+		LazyLoadOwnedItems();
+		LazyLoadStoreCurrency();
+		StoreViewModel->SetStatusMessage(Status);
+	};
+
+	auto OnFailure = [this, SellScope](const FText& Error)
+	{
+		(void)SellScope;
+		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
+		StoreViewModel->SetErrorMessage(Error);
+	};
+
+	if (DataProvider)
+	{
+		DataProvider->SellItem(TransactionRequest, OnSuccess, OnFailure);
+	}
 }
 
+void UStoreSubsystem::FilterAvailableStoreItems(const FString& FilterText)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	if (CachedStoreItems.IsEmpty())
+	{
+		return;
+	}
+	TArray<TObjectPtr<UItemViewModel>> FilteredItems;
+	FilteredItems.Reserve(CachedStoreItems.Num());
+
+	for (const FStoreItem& ItemData : CachedStoreItems)
+	{
+		if (ItemData.bIsOwned)
+		{
+			continue; // Skip owned items in the available items list.
+		}
+		if (FilterText.IsEmpty() || ItemData.UIData.DisplayName.ToString().Contains(FilterText))
+		{
+			UItemViewModel* ItemVM = GetOrCreateItemViewModel(ItemData);
+			FilteredItems.Add(ItemVM);
+		}
+	}
+
+	StoreViewModel->SetAvailableItems(FilteredItems);
+}
 
 UItemViewModel* UStoreSubsystem::GetOrCreateItemViewModel(const FStoreItem& ItemData)
 {

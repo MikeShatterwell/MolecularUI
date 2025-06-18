@@ -54,3 +54,19 @@ ESlateVisibility UStoreConversionFunctions::Conv_StoreTransactionTypeToVisibilit
 {
 	return CurrentTransactionType == TestTransactionType ? TrueVisibility : FalseVisibility;
 }
+
+FText UStoreConversionFunctions::Conv_TransactionTypeToText(const ETransactionType TransactionType)
+{
+	// Demo only, this could be replaced with a more comprehensive mapping or localization system.
+	switch (TransactionType)
+	{
+	case ETransactionType::None:
+		return FText::FromString("None");
+	case ETransactionType::Purchase:
+		return FText::FromString("Purchase");
+	case ETransactionType::Sell:
+		return FText::FromString("Sell");
+	default:
+		return FText::FromString("Unknown");
+	}
+}

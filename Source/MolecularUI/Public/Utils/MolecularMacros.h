@@ -93,7 +93,7 @@ do \
 		World->GetTimerManager().ClearTimer(TimerHandle); \
 		\
                 /* Use a helper lambda to parse optional arguments with default values. */ \
-                auto ArgParser = [](float InFailureChance = MolecularUI::CVars::DefaultMockFailureChance, float InMinDelay = MolecularUI::CVars::DefaultMockMinDelay, float InMaxDelay = MolecularUI::CVars::DefaultMockMaxDelay) \
+                auto ArgParser = [](float InFailureChance = MolecularUI::CVars::Default::FailureChance, float InMinDelay = MolecularUI::CVars::Default::MinDelay, float InMaxDelay = MolecularUI::CVars::Default::MaxDelay) \
                 { \
                         return TTuple<float, float, float>(InFailureChance, InMinDelay, InMaxDelay); \
                 }; \

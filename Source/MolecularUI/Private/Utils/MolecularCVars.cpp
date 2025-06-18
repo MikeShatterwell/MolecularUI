@@ -1,111 +1,133 @@
+// Copyright Mike Desrosiers, All Rights Reserved.
 #include "Utils/MolecularCVars.h"
-#include "HAL/IConsoleManager.h"
 
+#include <HAL/IConsoleManager.h>
+
+// Example CVar definitions for the MolecularUI demo.
 namespace MolecularUI::CVars
 {
-    float DefaultMockFailureChance = 0.0f;
-    static FAutoConsoleVariableRef CVarDefaultMockFailureChance(
-        TEXT("molecularui.MockFailureChance"),
-        DefaultMockFailureChance,
-        TEXT("Chance for mock data operations to fail [0..1]."),
-        ECVF_Cheat);
+	namespace Default
+	{
+		float MockFailureChance = 0.0f;
+		static FAutoConsoleVariableRef CVarMockFailureChance(
+			TEXT("MolecularUI.Default.MockFailureChance"),
+			MockFailureChance,
+			TEXT("Chance for mock data operations to fail [0..1]."),
+			ECVF_Cheat);
 
-    float DefaultMockMinDelay = 0.0f;
-    static FAutoConsoleVariableRef CVarDefaultMockMinDelay(
-        TEXT("molecularui.MockMinDelay"),
-        DefaultMockMinDelay,
-        TEXT("Minimum delay for mock data operations in seconds."),
-        ECVF_Cheat);
+		float MockMinDelay = 0.0f;
+		static FAutoConsoleVariableRef CVarMockMinDelay(
+			TEXT("MolecularUI.Default.MockMinDelay"),
+			MockMinDelay,
+			TEXT("Minimum delay for mock data operations in seconds."),
+			ECVF_Cheat);
 
-    float DefaultMockMaxDelay = 0.3f;
-    static FAutoConsoleVariableRef CVarDefaultMockMaxDelay(
-        TEXT("molecularui.MockMaxDelay"),
-        DefaultMockMaxDelay,
-        TEXT("Maximum delay for mock data operations in seconds."),
-        ECVF_Cheat);
+		float MockMaxDelay = 0.3f;
+		static FAutoConsoleVariableRef CVarMockMaxDelay(
+			TEXT("MolecularUI.Default.MockMaxDelay"),
+			MockMaxDelay,
+			TEXT("Maximum delay for mock data operations in seconds."),
+			ECVF_Cheat);
+	}
 
-    float StoreItemsFailureChance = 0.15f;
-    static FAutoConsoleVariableRef CVarStoreItemsFailureChance(
-        TEXT("molecularui.StoreItemsFailureChance"),
-        StoreItemsFailureChance,
-        TEXT("Chance for FetchStoreItems to fail [0..1]."),
-        ECVF_Cheat);
+	// Store operations
+	namespace Store
+	{
+		float FailureChance = 0.15f;
+		static FAutoConsoleVariableRef CVarFailureChance(
+			TEXT("MolecularUI.Store.ItemsFailureChance"),
+			FailureChance,
+			TEXT("Chance for FetchStoreItems to fail [0..1]."),
+			ECVF_Cheat);
 
-    float StoreItemsMinDelay = 3.5f;
-    static FAutoConsoleVariableRef CVarStoreItemsMinDelay(
-        TEXT("molecularui.StoreItemsMinDelay"),
-        StoreItemsMinDelay,
-        TEXT("Minimum delay for FetchStoreItems in seconds."),
-        ECVF_Cheat);
+		float MinDelay = 3.5f;
+		static FAutoConsoleVariableRef CVarMinDelay(
+			TEXT("MolecularUI.Store.ItemsMinDelay"),
+			MinDelay,
+			TEXT("Minimum delay for FetchStoreItems in seconds."),
+			ECVF_Cheat);
 
-    float StoreItemsMaxDelay = 8.5f;
-    static FAutoConsoleVariableRef CVarStoreItemsMaxDelay(
-        TEXT("molecularui.StoreItemsMaxDelay"),
-        StoreItemsMaxDelay,
-        TEXT("Maximum delay for FetchStoreItems in seconds."),
-        ECVF_Cheat);
+		float MaxDelay = 8.5f;
+		static FAutoConsoleVariableRef CVarMaxDelay(
+			TEXT("MolecularUI.Store.ItemsMaxDelay"),
+			MaxDelay,
+			TEXT("Maximum delay for FetchStoreItems in seconds."),
+			ECVF_Cheat);
+	}
 
-    float OwnedItemsFailureChance = 0.0f;
-    static FAutoConsoleVariableRef CVarOwnedItemsFailureChance(
-        TEXT("molecularui.OwnedItemsFailureChance"),
-        OwnedItemsFailureChance,
-        TEXT("Chance for FetchOwnedItems to fail [0..1]."),
-        ECVF_Cheat);
+	// Owned items operations
+	namespace OwnedItems
+	{
+		float FailureChance = 0.0f;
+		static FAutoConsoleVariableRef CVarFailureChance(
+			TEXT("MolecularUI.OwnedItems.ItemsFailureChance"),
+			FailureChance,
+			TEXT("Chance for FetchOwnedItems to fail [0..1]."),
+			ECVF_Cheat);
 
-    float OwnedItemsMinDelay = 0.0f;
-    static FAutoConsoleVariableRef CVarOwnedItemsMinDelay(
-        TEXT("molecularui.OwnedItemsMinDelay"),
-        OwnedItemsMinDelay,
-        TEXT("Minimum delay for FetchOwnedItems in seconds."),
-        ECVF_Cheat);
+		float MinDelay = 0.0f;
+		static FAutoConsoleVariableRef CVarMinDelay(
+			TEXT("MolecularUI.OwnedItems.ItemsMinDelay"),
+			MinDelay,
+			TEXT("Minimum delay for FetchOwnedItems in seconds."),
+			ECVF_Cheat);
 
-    float OwnedItemsMaxDelay = 0.3f;
-    static FAutoConsoleVariableRef CVarOwnedItemsMaxDelay(
-        TEXT("molecularui.OwnedItemsMaxDelay"),
-        OwnedItemsMaxDelay,
-        TEXT("Maximum delay for FetchOwnedItems in seconds."),
-        ECVF_Cheat);
+		float MaxDelay = 0.3f;
+		static FAutoConsoleVariableRef CVarMaxDelay(
+			TEXT("MolecularUI.OwnedItems.ItemsMaxDelay"),
+			MaxDelay,
+			TEXT("Maximum delay for FetchOwnedItems in seconds."),
+			ECVF_Cheat);
+	}
 
-    float PlayerCurrencyFailureChance = 0.0f;
-    static FAutoConsoleVariableRef CVarPlayerCurrencyFailureChance(
-        TEXT("molecularui.PlayerCurrencyFailureChance"),
-        PlayerCurrencyFailureChance,
-        TEXT("Chance for FetchPlayerCurrency to fail [0..1]."),
-        ECVF_Cheat);
+	// Player currency operations
+	namespace PlayerCurrency
+	{
+		float FailureChance = 0.0f;
+		static FAutoConsoleVariableRef CVarFailureChance(
+			TEXT("MolecularUI.PlayerCurrency.FailureChance"),
+			FailureChance,
+			TEXT("Chance for FetchPlayerCurrency to fail [0..1]."),
+			ECVF_Cheat);
 
-    float PlayerCurrencyMinDelay = 0.0f;
-    static FAutoConsoleVariableRef CVarPlayerCurrencyMinDelay(
-        TEXT("molecularui.PlayerCurrencyMinDelay"),
-        PlayerCurrencyMinDelay,
-        TEXT("Minimum delay for FetchPlayerCurrency in seconds."),
-        ECVF_Cheat);
+		float MinDelay = 0.0f;
+		static FAutoConsoleVariableRef CVarMinDelay(
+			TEXT("MolecularUI.PlayerCurrency.MinDelay"),
+			MinDelay,
+			TEXT("Minimum delay for FetchPlayerCurrency in seconds."),
+			ECVF_Cheat);
 
-    float PlayerCurrencyMaxDelay = 0.3f;
-    static FAutoConsoleVariableRef CVarPlayerCurrencyMaxDelay(
-        TEXT("molecularui.PlayerCurrencyMaxDelay"),
-        PlayerCurrencyMaxDelay,
-        TEXT("Maximum delay for FetchPlayerCurrency in seconds."),
-        ECVF_Cheat);
+		float MaxDelay = 0.3f;
+		static FAutoConsoleVariableRef CVarMaxDelay(
+			TEXT("MolecularUI.PlayerCurrency.MaxDelay"),
+			MaxDelay,
+			TEXT("Maximum delay for FetchPlayerCurrency in seconds."),
+			ECVF_Cheat);
+	}
 
-    float PurchaseFailureChance = 0.0f;
-    static FAutoConsoleVariableRef CVarPurchaseFailureChance(
-        TEXT("molecularui.PurchaseFailureChance"),
-        PurchaseFailureChance,
-        TEXT("Chance for PurchaseItem to fail [0..1]."),
-        ECVF_Cheat);
+	// Transaction operations
+	namespace Transaction
+	{
+		float FailureChance = 0.0f;
+		static FAutoConsoleVariableRef CVarFailureChance(
+			TEXT("MolecularUI.Transaction.FailureChance"),
+			FailureChance,
+			TEXT("Chance for TransactionItem to fail [0..1]."),
+			ECVF_Cheat);
 
-    float PurchaseMinDelay = 0.0f;
-    static FAutoConsoleVariableRef CVarPurchaseMinDelay(
-        TEXT("molecularui.PurchaseMinDelay"),
-        PurchaseMinDelay,
-        TEXT("Minimum delay for PurchaseItem in seconds."),
-        ECVF_Cheat);
+		float MinDelay = 0.0f;
+		static FAutoConsoleVariableRef CVarMinDelay(
+			TEXT("MolecularUI.Transaction.MinDelay"),
+			MinDelay,
+			TEXT("Minimum delay for TransactionItem in seconds."),
+			ECVF_Cheat);
 
-    float PurchaseMaxDelay = 0.3f;
-    static FAutoConsoleVariableRef CVarPurchaseMaxDelay(
-        TEXT("molecularui.PurchaseMaxDelay"),
-        PurchaseMaxDelay,
-        TEXT("Maximum delay for PurchaseItem in seconds."),
-        ECVF_Cheat);
+		float MaxDelay = 0.3f;
+		static FAutoConsoleVariableRef CVarMaxDelay(
+			TEXT("MolecularUI.Transaction.MaxDelay"),
+			MaxDelay,
+			TEXT("Maximum delay for TransactionItem in seconds."),
+			ECVF_Cheat);
+	}
 }
 
