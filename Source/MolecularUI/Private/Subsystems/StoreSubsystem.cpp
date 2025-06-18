@@ -237,9 +237,14 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 			{
 				StoreViewModel->SetTransactionType(ETransactionType::Sell);
 			}
-			else // Assume the item's available if not owned
+			else if (ItemVM->GetItemData().Cost <= StoreViewModel->GetPlayerCurrency())
 			{
+				// Passes the "client-side" check that the item can be purchased.
 				StoreViewModel->SetTransactionType(ETransactionType::Purchase);
+			}
+			else
+			{
+				StoreViewModel->SetTransactionType(ETransactionType::None);
 			}
 			break;
 		}

@@ -68,7 +68,9 @@ public:
 	void SetFilterText(const FString& InFilterText) { UE_MVVM_SET_PROPERTY_VALUE(FilterText, InFilterText); }
 	FString GetFilterText() const { return FilterText; }
 
+	UFUNCTION(BlueprintCallable, Category = "Store ViewModel")
 	void SetRefreshRequested(const bool bInRefreshRequested) { UE_MVVM_SET_PROPERTY_VALUE(bRefreshRequested, bInRefreshRequested); }
+	UFUNCTION(BlueprintPure, Category = "Store ViewModel")
 	bool GetRefreshRequested() const { return bRefreshRequested; }
 
 	void SetErrorMessage(const FText& InErrorMessage) { UE_MVVM_SET_PROPERTY_VALUE(ErrorMessage, InErrorMessage); }
