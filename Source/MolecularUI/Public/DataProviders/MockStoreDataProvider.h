@@ -48,5 +48,9 @@ protected:
 	FTimerHandle CurrencyLoadHandle;
 	FTimerHandle TransactionHandle;
 	FTimerHandle SellHandle;
+	
+	bool bDummyStoreDataInitialized = false;
+	bool bDummyOwnedDataInitialized = false;
+	bool bDummyPlayerCurrencyInitialized = false;
 };
 
