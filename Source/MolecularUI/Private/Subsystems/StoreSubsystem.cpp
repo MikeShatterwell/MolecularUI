@@ -358,7 +358,7 @@ void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseReques
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	SCOPED_STORE_STATE(PurchaseScope, StoreViewModel, MolecularUITags::Store::State_Purchasing);
 
-	auto OnSuccess = [this, PurchaseScope, &PurchaseRequest](const FText& Status)
+	auto OnSuccess = [this, PurchaseScope](const FText& Status)
 	{
 		(void)PurchaseScope;
 		StoreViewModel->SetTransactionRequest(FTransactionRequest());
