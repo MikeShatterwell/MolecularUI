@@ -2,6 +2,7 @@
 
 #include "DataProviders/MockStoreDataProvider.h"
 #include "Utils/MolecularMacros.h"
+#include "Utils/MolecularCVars.h"
 #include "MolecularTypes.h"
 
 #include <TimerManager.h>
@@ -29,7 +30,10 @@ void UMockStoreDataProvider::FetchStoreItems(TFunction<void(const TArray<FStoreI
 		OnFailure(FText::FromString(TEXT("Failed to load store items.")));
 	};
 
-	FETCH_MOCK_DATA(ItemLoadHandle, SuccessWrapper, FailureWrapper, 0.15f, 3.5f, 8.5f);
+        FETCH_MOCK_DATA(ItemLoadHandle, SuccessWrapper, FailureWrapper,
+            MolecularUI::CVars::StoreItemsFailureChance,
+            MolecularUI::CVars::StoreItemsMinDelay,
+            MolecularUI::CVars::StoreItemsMaxDelay);
 }
 
 void UMockStoreDataProvider::FetchOwnedItems(TFunction<void(const TArray<FStoreItem>&, const FText&)> OnSuccess,
@@ -49,7 +53,10 @@ void UMockStoreDataProvider::FetchOwnedItems(TFunction<void(const TArray<FStoreI
 		OnFailure(FText::FromString(TEXT("Failed to load owned items.")));
 	};
 
-	FETCH_MOCK_DATA(OwnedItemLoadHandle, SuccessWrapper, FailureWrapper);
+        FETCH_MOCK_DATA(OwnedItemLoadHandle, SuccessWrapper, FailureWrapper,
+            MolecularUI::CVars::OwnedItemsFailureChance,
+            MolecularUI::CVars::OwnedItemsMinDelay,
+            MolecularUI::CVars::OwnedItemsMaxDelay);
 }
 
 void UMockStoreDataProvider::FetchPlayerCurrency(TFunction<void(int32, const FText&)> OnSuccess,
@@ -69,7 +76,10 @@ void UMockStoreDataProvider::FetchPlayerCurrency(TFunction<void(int32, const FTe
 		OnFailure(FText::FromString(TEXT("Failed to load currency.")));
 	};
 
-	FETCH_MOCK_DATA(CurrencyLoadHandle, SuccessWrapper, FailureWrapper);
+        FETCH_MOCK_DATA(CurrencyLoadHandle, SuccessWrapper, FailureWrapper,
+            MolecularUI::CVars::PlayerCurrencyFailureChance,
+            MolecularUI::CVars::PlayerCurrencyMinDelay,
+            MolecularUI::CVars::PlayerCurrencyMaxDelay);
 }
 
 void UMockStoreDataProvider::PurchaseItem(const FTransactionRequest& Request,
@@ -104,7 +114,10 @@ void UMockStoreDataProvider::PurchaseItem(const FTransactionRequest& Request,
 		OnFailure(FText::FromString(TEXT("Purchase failed.")));
 	};
 
-	FETCH_MOCK_DATA(PurchaseHandle, SuccessWrapper, FailureWrapper);
+        FETCH_MOCK_DATA(PurchaseHandle, SuccessWrapper, FailureWrapper,
+            MolecularUI::CVars::PurchaseFailureChance,
+            MolecularUI::CVars::PurchaseMinDelay,
+            MolecularUI::CVars::PurchaseMaxDelay);
 }
 
 void UMockStoreDataProvider::CreateDummyStoreData()

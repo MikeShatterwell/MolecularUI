@@ -4,6 +4,7 @@
 
 #include <CoreMinimal.h>
 #include <Templates/RemoveReference.h>
+#include "Utils/MolecularCVars.h"
 
 #define UE_MVVM_BIND_FIELD(ViewModel, Property, Handler) \
 do \
@@ -91,11 +92,11 @@ do \
 	{ \
 		World->GetTimerManager().ClearTimer(TimerHandle); \
 		\
-		/* Use a helper lambda to parse optional arguments with default values. */ \
-		auto ArgParser = [](float InFailureChance = 0.0f, float InMinDelay = 0.0f, float InMaxDelay = 0.3f) \
-		{ \
-			return TTuple<float, float, float>(InFailureChance, InMinDelay, InMaxDelay); \
-		}; \
+                /* Use a helper lambda to parse optional arguments with default values. */ \
+                auto ArgParser = [](float InFailureChance = MolecularUI::CVars::DefaultMockFailureChance, float InMinDelay = MolecularUI::CVars::DefaultMockMinDelay, float InMaxDelay = MolecularUI::CVars::DefaultMockMaxDelay) \
+                { \
+                        return TTuple<float, float, float>(InFailureChance, InMinDelay, InMaxDelay); \
+                }; \
 		const auto ParsedArgs = ArgParser(__VA_ARGS__); \
 		const float FailureChance_Internal = ParsedArgs.Get<0>(); \
 		const float MinDelay_Internal = ParsedArgs.Get<1>(); \
