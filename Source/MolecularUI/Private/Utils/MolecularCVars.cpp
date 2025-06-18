@@ -31,14 +31,14 @@ namespace MolecularUI::CVars
 	}
 
 	// Store operations
-	namespace Store
-	{
-		float FailureChance = 0.15f;
-		static FAutoConsoleVariableRef CVarFailureChance(
-			TEXT("MolecularUI.Store.ItemsFailureChance"),
-			FailureChance,
-			TEXT("Chance for FetchStoreItems to fail [0..1]."),
-			ECVF_Cheat);
+        namespace Store
+        {
+                float FailureChance = 0.15f;
+                static FAutoConsoleVariableRef CVarFailureChance(
+                        TEXT("MolecularUI.Store.ItemsFailureChance"),
+                        FailureChance,
+                        TEXT("Chance for FetchStoreItems to fail [0..1]."),
+                        ECVF_Cheat);
 
 		float MinDelay = 3.5f;
 		static FAutoConsoleVariableRef CVarMinDelay(
@@ -48,12 +48,19 @@ namespace MolecularUI::CVars
 			ECVF_Cheat);
 
 		float MaxDelay = 8.5f;
-		static FAutoConsoleVariableRef CVarMaxDelay(
-			TEXT("MolecularUI.Store.ItemsMaxDelay"),
-			MaxDelay,
-			TEXT("Maximum delay for FetchStoreItems in seconds."),
-			ECVF_Cheat);
-	}
+                static FAutoConsoleVariableRef CVarMaxDelay(
+                        TEXT("MolecularUI.Store.ItemsMaxDelay"),
+                        MaxDelay,
+                        TEXT("Maximum delay for FetchStoreItems in seconds."),
+                        ECVF_Cheat);
+
+                int32 NumDummyItems = 3;
+                static FAutoConsoleVariableRef CVarNumDummyItems(
+                        TEXT("MolecularUI.Store.NumDummyItems"),
+                        NumDummyItems,
+                        TEXT("Number of dummy store items to generate."),
+                        ECVF_Cheat);
+        }
 
 	// Owned items operations
 	namespace OwnedItems
