@@ -5,6 +5,10 @@
 #include "DataProviders/StoreDataProvider.h"
 #include "MockStoreDataProvider.generated.h"
 
+/*
+ * The mock data provider simulates a store backend by generating dummy data
+ * and simulating asynchronous operations with random delays and failure chances.
+ */
 UCLASS()
 class UMockStoreDataProvider : public UObject, public IStoreDataProvider
 {

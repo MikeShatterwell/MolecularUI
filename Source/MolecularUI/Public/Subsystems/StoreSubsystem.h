@@ -19,15 +19,14 @@ class UStoreSubsystem : public UGameInstanceSubsystem, public IStoreViewModelPro
 	GENERATED_BODY()
 
 public:
+	// Begin USubsystem interface.
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
+	// End USubsystem interface.
 
-	/** Break out of the error state by clearing the error message and resetting the state. */
-	UFUNCTION(BlueprintCallable, Category = "Store Subsystem")
-	void BreakErrorState();
-
-	// IStoreViewModelProvider implementation.
+	// Begin IStoreViewModelProvider implementation.
 	virtual UStoreViewModel* GetStoreViewModel_Implementation() override;
+	// End IStoreViewModelProvider implementation.
 
 protected:
 	// Reacts to changes in the ViewModel's properties.
@@ -43,10 +42,8 @@ protected:
 	void LazyPurchaseItem(const FTransactionRequest& PurchaseRequest);
 	void LazySellItem(const FTransactionRequest& TransactionRequest);
 
-
+	// Filters the cached store items based on the filter text.
 	void FilterAvailableStoreItems(const FString& FilterText);
-
-
 
 	// The single, authoritative instance of the Store ViewModel.
 	UPROPERTY(Transient)
@@ -69,14 +66,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Store", meta = (AllowAbstract = true))
 	TSubclassOf<UObject> DataProviderClass = UMockStoreDataProvider::StaticClass();
 
-	/** Instance of the provider created from DataProviderClass. */
+	// Instance of the provider created from DataProviderClass.
 	UPROPERTY(Transient)
 	TObjectPtr<UObject> DataProviderObject = nullptr;
 
-	/** Cached interface pointer to the provider instance. */
+	// Cached interface pointer to the provider instance.
 	TScriptInterface<IStoreDataProvider> DataProvider;
-
-
+	
 	/**
 	 * Centralized factory method for ItemViewModels.
 	 * Retrieves an ItemViewModel from the cache or creates a new one if it doesn't exist.

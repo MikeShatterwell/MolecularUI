@@ -466,12 +466,3 @@ UItemViewModel* UStoreSubsystem::GetOrCreateItemViewModel(const FStoreItem& Item
 
 	return NewItemVM;
 }
-
-void UStoreSubsystem::BreakErrorState()
-{
-	if (IsValid(StoreViewModel) && StoreViewModel->HasStoreState(MolecularUITags::Store::State_Error))
-	{
-		StoreViewModel->SetErrorMessage(FText::GetEmpty());
-		StoreViewModel->RemoveStoreState(MolecularUITags::Store::State_Error);
-	}
-}
