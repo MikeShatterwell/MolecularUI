@@ -4,7 +4,7 @@
 #include "MolecularUITags.h"
 
 bool UStoreConversionFunctions::Conv_HasStoreState(const FGameplayTagContainer& CurrentStoreStates,
-                                                   const FGameplayTag& TestStoreState)
+												   const FGameplayTag& TestStoreState)
 {
 	return CurrentStoreStates.HasTagExact(TestStoreState);
 }

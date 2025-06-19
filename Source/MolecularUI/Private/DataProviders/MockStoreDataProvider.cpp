@@ -14,7 +14,7 @@ void UMockStoreDataProvider::InitializeProvider(UObject* InOuter)
 }
 
 void UMockStoreDataProvider::FetchStoreItems(TFunction<void(const TArray<FStoreItem>&, const FText&)> OnSuccess,
-                                             TFunction<void(const FText&)> OnFailure)
+											 TFunction<void(const FText&)> OnFailure)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 
@@ -35,13 +35,13 @@ void UMockStoreDataProvider::FetchStoreItems(TFunction<void(const TArray<FStoreI
 	};
 
 	FETCH_MOCK_DATA(ItemLoadHandle, SuccessWrapper, FailureWrapper,
-	                MolecularUI::CVars::Store::FailureChance,
-	                MolecularUI::CVars::Store::MinDelay,
-	                MolecularUI::CVars::Store::MaxDelay);
+					MolecularUI::CVars::Store::FailureChance,
+					MolecularUI::CVars::Store::MinDelay,
+					MolecularUI::CVars::Store::MaxDelay);
 }
 
 void UMockStoreDataProvider::FetchOwnedItems(TFunction<void(const TArray<FStoreItem>&, const FText&)> OnSuccess,
-                                             TFunction<void(const FText&)> OnFailure)
+											 TFunction<void(const FText&)> OnFailure)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 
@@ -62,13 +62,13 @@ void UMockStoreDataProvider::FetchOwnedItems(TFunction<void(const TArray<FStoreI
 	};
 
 	FETCH_MOCK_DATA(OwnedItemLoadHandle, SuccessWrapper, FailureWrapper,
-	                MolecularUI::CVars::OwnedItems::FailureChance,
-	                MolecularUI::CVars::OwnedItems::MinDelay,
-	                MolecularUI::CVars::OwnedItems::MaxDelay);
+					MolecularUI::CVars::OwnedItems::FailureChance,
+					MolecularUI::CVars::OwnedItems::MinDelay,
+					MolecularUI::CVars::OwnedItems::MaxDelay);
 }
 
 void UMockStoreDataProvider::FetchPlayerCurrency(TFunction<void(int32, const FText&)> OnSuccess,
-                                                 TFunction<void(const FText&)> OnFailure)
+												 TFunction<void(const FText&)> OnFailure)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 
@@ -89,14 +89,14 @@ void UMockStoreDataProvider::FetchPlayerCurrency(TFunction<void(int32, const FTe
 	};
 
 	FETCH_MOCK_DATA(CurrencyLoadHandle, SuccessWrapper, FailureWrapper,
-	                MolecularUI::CVars::PlayerCurrency::FailureChance,
-	                MolecularUI::CVars::PlayerCurrency::MinDelay,
-	                MolecularUI::CVars::PlayerCurrency::MaxDelay);
+					MolecularUI::CVars::PlayerCurrency::FailureChance,
+					MolecularUI::CVars::PlayerCurrency::MinDelay,
+					MolecularUI::CVars::PlayerCurrency::MaxDelay);
 }
 
 void UMockStoreDataProvider::PurchaseItem(const FTransactionRequest& Request,
-                                          TFunction<void(const FText&)> OnSuccess,
-                                          TFunction<void(const FText&)> OnFailure)
+										  TFunction<void(const FText&)> OnSuccess,
+										  TFunction<void(const FText&)> OnFailure)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 
@@ -136,13 +136,13 @@ void UMockStoreDataProvider::PurchaseItem(const FTransactionRequest& Request,
 	};
 
 	FETCH_MOCK_DATA(TransactionHandle, SuccessWrapper, FailureWrapper,
-	                MolecularUI::CVars::Transaction::FailureChance,
-	                MolecularUI::CVars::Transaction::MinDelay,
-	                MolecularUI::CVars::Transaction::MaxDelay);
+					MolecularUI::CVars::Transaction::FailureChance,
+					MolecularUI::CVars::Transaction::MinDelay,
+					MolecularUI::CVars::Transaction::MaxDelay);
 }
 
 void UMockStoreDataProvider::SellItem(const FTransactionRequest& Request, TFunction<void(const FText&)> OnSuccess,
-                                      TFunction<void(const FText&)> OnFailure)
+									  TFunction<void(const FText&)> OnFailure)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 
@@ -183,9 +183,9 @@ void UMockStoreDataProvider::SellItem(const FTransactionRequest& Request, TFunct
 	};
 
 	FETCH_MOCK_DATA(TransactionHandle, SuccessWrapper, FailureWrapper,
-	                MolecularUI::CVars::Transaction::FailureChance,
-	                MolecularUI::CVars::Transaction::MinDelay,
-	                MolecularUI::CVars::Transaction::MaxDelay);
+					MolecularUI::CVars::Transaction::FailureChance,
+					MolecularUI::CVars::Transaction::MinDelay,
+					MolecularUI::CVars::Transaction::MaxDelay);
 }
 
 void UMockStoreDataProvider::CreateDummyStoreData()

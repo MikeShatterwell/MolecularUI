@@ -4,21 +4,23 @@
 #include <GameplayTagContainer.h>
 #include <NativeGameplayTags.h>
 
+#define TAG(TagName) MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TagName)
+
 namespace MolecularUITags
 {
 	namespace Store
 	{
 		namespace Loading
 		{
-			MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Loading_Items);
-			MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Loading_OwnedItems);
-			MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Loading_Currency);
+			TAG(State_Loading_Items);
+			TAG(State_Loading_OwnedItems);
+			TAG(State_Loading_Currency);
 		}
-		MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_None);
-		MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Ready);
-		MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Purchasing);
-		MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Selling);
-		MOLECULARUI_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Error);
+		TAG(State_None);
+		TAG(State_Ready);
+		TAG(State_Purchasing);
+		TAG(State_Selling);
+		TAG(State_Error);
 	}
 }
 

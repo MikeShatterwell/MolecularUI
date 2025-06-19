@@ -13,13 +13,13 @@ namespace MolecularUI::CVars
 		extern float MaxDelay;
 	}
 
-        namespace Store
-        {
-                extern float FailureChance;
-                extern float MinDelay;
-                extern float MaxDelay;
-                extern int32 NumDummyItems;
-        }
+	namespace Store
+	{
+		extern float FailureChance;
+		extern float MinDelay;
+		extern float MaxDelay;
+		extern int32 NumDummyItems;
+	}
 
 	namespace OwnedItems
 	{
