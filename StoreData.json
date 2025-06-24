@@ -1,0 +1,548 @@
+[
+  {
+    "Name": "Item_001",
+    "ItemId": "Item_001",
+    "Cost": 10,
+    "bIsOwned": false,
+    "UIData": {
+      "DisplayName": "NSLOCTEXT(\"\", \"Item_001_LOC\", \"Item 001\")",
+      "Description": "Description for Item 001",
+      "Icon": {
+        "TintColor": {
+          "SpecifiedColor": { "R": 1, "G": 1, "B": 1, "A": 1 },
+          "ColorUseRule": "UseColor_Specified"
+        },
+        "DrawAs": "Image",
+        "Tiling": "NoTile",
+        "Mirroring": "NoMirror",
+        "ImageType": "NoImage",
+        "ImageSize": { "X": 32, "Y": 32 },
+        "Margin": { "Left": 0, "Top": 0, "Right": 0, "Bottom": 0 },
+        "Tint": { "R": 1, "G": 1, "B": 1, "A": 1 },
+        "ResourceObject": "None",
+        "OutlineSettings": {
+          "CornerRadii": { "X": 0, "Y": 0, "Z": 0, "W": 0 },
+          "Color": {
+            "SpecifiedColor": { "R": 0, "G": 0, "B": 0, "A": 0 },
+            "ColorUseRule": "UseColor_Specified"
+          },
+          "Width": 0,
+          "RoundingType": "HalfHeightRadius",
+          "bUseBrushTransparency": false
+        },
+        "UVRegion": {
+          "Min": { "X": 0, "Y": 0 },
+          "Max": { "X": 0, "Y": 0 },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false,
+        "bHasUObject": false,
+        "ResourceName": "Item_001"
+      }
+    }
+  },
+  {
+    "Name": "Item_002",
+    "ItemId": "Item_002",
+    "Cost": 20,
+    "bIsOwned": true,
+    "UIData": {
+      "DisplayName": "NSLOCTEXT(\"\", \"Item_002_LOC\", \"Item 002\")",
+      "Description": "Description for Item 002",
+      "Icon": {
+        "TintColor": {
+          "SpecifiedColor": { "R": 1, "G": 1, "B": 1, "A": 1 },
+          "ColorUseRule": "UseColor_Specified"
+        },
+        "DrawAs": "Image",
+        "Tiling": "NoTile",
+        "Mirroring": "NoMirror",
+        "ImageType": "NoImage",
+        "ImageSize": { "X": 32, "Y": 32 },
+        "Margin": { "Left": 0, "Top": 0, "Right": 0, "Bottom": 0 },
+        "Tint": { "R": 1, "G": 1, "B": 1, "A": 1 },
+        "ResourceObject": "None",
+        "OutlineSettings": {
+          "CornerRadii": { "X": 0, "Y": 0, "Z": 0, "W": 0 },
+          "Color": {
+            "SpecifiedColor": { "R": 0, "G": 0, "B": 0, "A": 0 },
+            "ColorUseRule": "UseColor_Specified"
+          },
+          "Width": 0,
+          "RoundingType": "HalfHeightRadius",
+          "bUseBrushTransparency": false
+        },
+        "UVRegion": {
+          "Min": { "X": 0, "Y": 0 },
+          "Max": { "X": 0, "Y": 0 },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false,
+        "bHasUObject": false,
+        "ResourceName": "Item_002"
+      }
+    }
+  },
+  {
+    "Name": "Item_003",
+    "ItemId": "Item_003",
+    "Cost": 30,
+    "bIsOwned": false,
+    "UIData": {
+      "DisplayName": "NSLOCTEXT(\"\", \"Item_003_LOC\", \"Item 003\")",
+      "Description": "Description for Item 003",
+      "Icon": {
+        "TintColor": {
+          "SpecifiedColor": { "R": 1, "G": 1, "B": 1, "A": 1 },
+          "ColorUseRule": "UseColor_Specified"
+        },
+        "DrawAs": "Image",
+        "Tiling": "NoTile",
+        "Mirroring": "NoMirror",
+        "ImageType": "NoImage",
+        "ImageSize": { "X": 32, "Y": 32 },
+        "Margin": { "Left": 0, "Top": 0, "Right": 0, "Bottom": 0 },
+        "Tint": { "R": 1, "G": 1, "B": 1, "A": 1 },
+        "ResourceObject": "None",
+        "OutlineSettings": {
+          "CornerRadii": { "X": 0, "Y": 0, "Z": 0, "W": 0 },
+          "Color": {
+            "SpecifiedColor": { "R": 0, "G": 0, "B": 0, "A": 0 },
+            "ColorUseRule": "UseColor_Specified"
+          },
+          "Width": 0,
+          "RoundingType": "HalfHeightRadius",
+          "bUseBrushTransparency": false
+        },
+        "UVRegion": {
+          "Min": { "X": 0, "Y": 0 },
+          "Max": { "X": 0, "Y": 0 },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false,
+        "bHasUObject": false,
+        "ResourceName": "Item_003"
+      }
+    }
+  },
+  {
+    "Name": "Item_004",
+    "ItemId": "Item_004",
+    "Cost": 40,
+    "bIsOwned": true,
+    "UIData": {
+      "DisplayName": "NSLOCTEXT(\"\", \"Item_004_LOC\", \"Item 004\")",
+      "Description": "Description for Item 004",
+      "Icon": {
+        "TintColor": {
+          "SpecifiedColor": { "R": 1, "G": 1, "B": 1, "A": 1 },
+          "ColorUseRule": "UseColor_Specified"
+        },
+        "DrawAs": "Image",
+        "Tiling": "NoTile",
+        "Mirroring": "NoMirror",
+        "ImageType": "NoImage",
+        "ImageSize": { "X": 32, "Y": 32 },
+        "Margin": { "Left": 0, "Top": 0, "Right": 0, "Bottom": 0 },
+        "Tint": { "R": 1, "G": 1, "B": 1, "A": 1 },
+        "ResourceObject": "None",
+        "OutlineSettings": {
+          "CornerRadii": { "X": 0, "Y": 0, "Z": 0, "W": 0 },
+          "Color": {
+            "SpecifiedColor": { "R": 0, "G": 0, "B": 0, "A": 0 },
+            "ColorUseRule": "UseColor_Specified"
+          },
+          "Width": 0,
+          "RoundingType": "HalfHeightRadius",
+          "bUseBrushTransparency": false
+        },
+        "UVRegion": {
+          "Min": { "X": 0, "Y": 0 },
+          "Max": { "X": 0, "Y": 0 },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false,
+        "bHasUObject": false,
+        "ResourceName": "Item_004"
+      }
+    }
+  },
+  {
+    "Name": "Item_005",
+    "ItemId": "Item_005",
+    "Cost": 50,
+    "bIsOwned": false,
+    "UIData": {
+      "DisplayName": "NSLOCTEXT(\"\", \"Item_005_LOC\", \"Item 005\")",
+      "Description": "Description for Item 005",
+      "Icon": {
+        "TintColor": {
+          "SpecifiedColor": { "R": 1, "G": 1, "B": 1, "A": 1 },
+          "ColorUseRule": "UseColor_Specified"
+        },
+        "DrawAs": "Image",
+        "Tiling": "NoTile",
+        "Mirroring": "NoMirror",
+        "ImageType": "NoImage",
+        "ImageSize": { "X": 32, "Y": 32 },
+        "Margin": { "Left": 0, "Top": 0, "Right": 0, "Bottom": 0 },
+        "Tint": { "R": 1, "G": 1, "B": 1, "A": 1 },
+        "ResourceObject": "None",
+        "OutlineSettings": {
+          "CornerRadii": { "X": 0, "Y": 0, "Z": 0, "W": 0 },
+          "Color": {
+            "SpecifiedColor": { "R": 0, "G": 0, "B": 0, "A": 0 },
+            "ColorUseRule": "UseColor_Specified"
+          },
+          "Width": 0,
+          "RoundingType": "HalfHeightRadius",
+          "bUseBrushTransparency": false
+        },
+        "UVRegion": {
+          "Min": { "X": 0, "Y": 0 },
+          "Max": { "X": 0, "Y": 0 },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false,
+        "bHasUObject": false,
+        "ResourceName": "Item_005"
+      }
+    }
+  },
+  {
+    "Name": "Item_006",
+    "ItemId": "Item_006",
+    "Cost": 60,
+    "bIsOwned": true,
+    "UIData": {
+      "DisplayName": "NSLOCTEXT(\"\", \"Item_006_LOC\", \"Item 006\")",
+      "Description": "Description for Item 006",
+      "Icon": {
+        "TintColor": {
+          "SpecifiedColor": { "R": 1, "G": 1, "B": 1, "A": 1 },
+          "ColorUseRule": "UseColor_Specified"
+        },
+        "DrawAs": "Image",
+        "Tiling": "NoTile",
+        "Mirroring": "NoMirror",
+        "ImageType": "NoImage",
+        "ImageSize": { "X": 32, "Y": 32 },
+        "Margin": { "Left": 0, "Top": 0, "Right": 0, "Bottom": 0 },
+        "Tint": { "R": 1, "G": 1, "B": 1, "A": 1 },
+        "ResourceObject": "None",
+        "OutlineSettings": {
+          "CornerRadii": { "X": 0, "Y": 0, "Z": 0, "W": 0 },
+          "Color": {
+            "SpecifiedColor": { "R": 0, "G": 0, "B": 0, "A": 0 },
+            "ColorUseRule": "UseColor_Specified"
+          },
+          "Width": 0,
+          "RoundingType": "HalfHeightRadius",
+          "bUseBrushTransparency": false
+        },
+        "UVRegion": {
+          "Min": { "X": 0, "Y": 0 },
+          "Max": { "X": 0, "Y": 0 },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false,
+        "bHasUObject": false,
+        "ResourceName": "Item_006"
+      }
+    }
+  },
+  {
+    "Name": "Item_007",
+    "ItemId": "Item_007",
+    "Cost": 70,
+    "bIsOwned": false,
+    "UIData": {
+      "DisplayName": "NSLOCTEXT(\"\", \"Item_007_LOC\", \"Item 007\")",
+      "Description": "Description for Item 007",
+      "Icon": {
+        "TintColor": {
+          "SpecifiedColor": { "R": 1, "G": 1, "B": 1, "A": 1 },
+          "ColorUseRule": "UseColor_Specified"
+        },
+        "DrawAs": "Image",
+        "Tiling": "NoTile",
+        "Mirroring": "NoMirror",
+        "ImageType": "NoImage",
+        "ImageSize": { "X": 32, "Y": 32 },
+        "Margin": { "Left": 0, "Top": 0, "Right": 0, "Bottom": 0 },
+        "Tint": { "R": 1, "G": 1, "B": 1, "A": 1 },
+        "ResourceObject": "None",
+        "OutlineSettings": {
+          "CornerRadii": { "X": 0, "Y": 0, "Z": 0, "W": 0 },
+          "Color": {
+            "SpecifiedColor": { "R": 0, "G": 0, "B": 0, "A": 0 },
+            "ColorUseRule": "UseColor_Specified"
+          },
+          "Width": 0,
+          "RoundingType": "HalfHeightRadius",
+          "bUseBrushTransparency": false
+        },
+        "UVRegion": {
+          "Min": { "X": 0, "Y": 0 },
+          "Max": { "X": 0, "Y": 0 },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false,
+        "bHasUObject": false,
+        "ResourceName": "Item_007"
+      }
+    }
+  },
+  {
+    "Name": "Item_008",
+    "ItemId": "Item_008",
+    "Cost": 80,
+    "bIsOwned": true,
+    "UIData": {
+      "DisplayName": "NSLOCTEXT(\"\", \"Item_008_LOC\", \"Item 008\")",
+      "Description": "Description for Item 008",
+      "Icon": {
+        "TintColor": {
+          "SpecifiedColor": { "R": 1, "G": 1, "B": 1, "A": 1 },
+          "ColorUseRule": "UseColor_Specified"
+        },
+        "DrawAs": "Image",
+        "Tiling": "NoTile",
+        "Mirroring": "NoMirror",
+        "ImageType": "NoImage",
+        "ImageSize": { "X": 32, "Y": 32 },
+        "Margin": { "Left": 0, "Top": 0, "Right": 0, "Bottom": 0 },
+        "Tint": { "R": 1, "G": 1, "B": 1, "A": 1 },
+        "ResourceObject": "None",
+        "OutlineSettings": {
+          "CornerRadii": { "X": 0, "Y": 0, "Z": 0, "W": 0 },
+          "Color": {
+            "SpecifiedColor": { "R": 0, "G": 0, "B": 0, "A": 0 },
+            "ColorUseRule": "UseColor_Specified"
+          },
+          "Width": 0,
+          "RoundingType": "HalfHeightRadius",
+          "bUseBrushTransparency": false
+        },
+        "UVRegion": {
+          "Min": { "X": 0, "Y": 0 },
+          "Max": { "X": 0, "Y": 0 },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false,
+        "bHasUObject": false,
+        "ResourceName": "Item_008"
+      }
+    }
+  },
+  {
+    "Name": "Item_009",
+    "ItemId": "Item_009",
+    "Cost": 90,
+    "bIsOwned": false,
+    "UIData": {
+      "DisplayName": "NSLOCTEXT(\"\", \"Item_009_LOC\", \"Item 009\")",
+      "Description": "Description for Item 009",
+      "Icon": {
+        "TintColor": {
+          "SpecifiedColor": { "R": 1, "G": 1, "B": 1, "A": 1 },
+          "ColorUseRule": "UseColor_Specified"
+        },
+        "DrawAs": "Image",
+        "Tiling": "NoTile",
+        "Mirroring": "NoMirror",
+        "ImageType": "NoImage",
+        "ImageSize": { "X": 32, "Y": 32 },
+        "Margin": { "Left": 0, "Top": 0, "Right": 0, "Bottom": 0 },
+        "Tint": { "R": 1, "G": 1, "B": 1, "A": 1 },
+        "ResourceObject": "None",
+        "OutlineSettings": {
+          "CornerRadii": { "X": 0, "Y": 0, "Z": 0, "W": 0 },
+          "Color": {
+            "SpecifiedColor": { "R": 0, "G": 0, "B": 0, "A": 0 },
+            "ColorUseRule": "UseColor_Specified"
+          },
+          "Width": 0,
+          "RoundingType": "HalfHeightRadius",
+          "bUseBrushTransparency": false
+        },
+        "UVRegion": {
+          "Min": { "X": 0, "Y": 0 },
+          "Max": { "X": 0, "Y": 0 },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false,
+        "bHasUObject": false,
+        "ResourceName": "Item_009"
+      }
+    }
+  },
+  {
+    "Name": "Item_010",
+    "ItemId": "Item_010",
+    "Cost": 100,
+    "bIsOwned": true,
+    "UIData": {
+      "DisplayName": "NSLOCTEXT(\"\", \"Item_010_LOC\", \"Item 010\")",
+      "Description": "Description for Item 010",
+      "Icon": {
+        "TintColor": {
+          "SpecifiedColor": { "R": 1, "G": 1, "B": 1, "A": 1 },
+          "ColorUseRule": "UseColor_Specified"
+        },
+        "DrawAs": "Image",
+        "Tiling": "NoTile",
+        "Mirroring": "NoMirror",
+        "ImageType": "NoImage",
+        "ImageSize": { "X": 32, "Y": 32 },
+        "Margin": { "Left": 0, "Top": 0, "Right": 0, "Bottom": 0 },
+        "Tint": { "R": 1, "G": 1, "B": 1, "A": 1 },
+        "ResourceObject": "None",
+        "OutlineSettings": {
+          "CornerRadii": { "X": 0, "Y": 0, "Z": 0, "W": 0 },
+          "Color": {
+            "SpecifiedColor": { "R": 0, "G": 0, "B": 0, "A": 0 },
+            "ColorUseRule": "UseColor_Specified"
+          },
+          "Width": 0,
+          "RoundingType": "HalfHeightRadius",
+          "bUseBrushTransparency": false
+        },
+        "UVRegion": {
+          "Min": { "X": 0, "Y": 0 },
+          "Max": { "X": 0, "Y": 0 },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false,
+        "bHasUObject": false,
+        "ResourceName": "Item_010"
+      }
+    }
+  },
+  {
+    "Name": "Item_011",
+    "ItemId": "Item_011",
+    "Cost": 110,
+    "bIsOwned": false,
+    "UIData": {
+      "DisplayName": "NSLOCTEXT(\"\", \"Item_011_LOC\", \"Item 011\")",
+      "Description": "Description for Item 011",
+      "Icon": {
+        "TintColor": {
+          "SpecifiedColor": { "R": 1, "G": 1, "B": 1, "A": 1 },
+          "ColorUseRule": "UseColor_Specified"
+        },
+        "DrawAs": "Image",
+        "Tiling": "NoTile",
+        "Mirroring": "NoMirror",
+        "ImageType": "NoImage",
+        "ImageSize": { "X": 32, "Y": 32 },
+        "Margin": { "Left": 0, "Top": 0, "Right": 0, "Bottom": 0 },
+        "Tint": { "R": 1, "G": 1, "B": 1, "A": 1 },
+        "ResourceObject": "None",
+        "OutlineSettings": {
+          "CornerRadii": { "X": 0, "Y": 0, "Z": 0, "W": 0 },
+          "Color": {
+            "SpecifiedColor": { "R": 0, "G": 0, "B": 0, "A": 0 },
+            "ColorUseRule": "UseColor_Specified"
+          },
+          "Width": 0,
+          "RoundingType": "HalfHeightRadius",
+          "bUseBrushTransparency": false
+        },
+        "UVRegion": {
+          "Min": { "X": 0, "Y": 0 },
+          "Max": { "X": 0, "Y": 0 },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false,
+        "bHasUObject": false,
+        "ResourceName": "Item_011"
+      }
+    }
+  },
+  {
+    "Name": "Item_012",
+    "ItemId": "Item_012",
+    "Cost": 120,
+    "bIsOwned": true,
+    "UIData": {
+      "DisplayName": "NSLOCTEXT(\"\", \"Item_012_LOC\", \"Item 012\")",
+      "Description": "Description for Item 012",
+      "Icon": {
+        "TintColor": {
+          "SpecifiedColor": { "R": 1, "G": 1, "B": 1, "A": 1 },
+          "ColorUseRule": "UseColor_Specified"
+        },
+        "DrawAs": "Image",
+        "Tiling": "NoTile",
+        "Mirroring": "NoMirror",
+        "ImageType": "NoImage",
+        "ImageSize": { "X": 32, "Y": 32 },
+        "Margin": { "Left": 0, "Top": 0, "Right": 0, "Bottom": 0 },
+        "Tint": { "R": 1, "G": 1, "B": 1, "A": 1 },
+        "ResourceObject": "None",
+        "OutlineSettings": {
+          "CornerRadii": { "X": 0, "Y": 0, "Z": 0, "W": 0 },
+          "Color": {
+            "SpecifiedColor": { "R": 0, "G": 0, "B": 0, "A": 0 },
+            "ColorUseRule": "UseColor_Specified"
+          },
+          "Width": 0,
+          "RoundingType": "HalfHeightRadius",
+          "bUseBrushTransparency": false
+        },
+        "UVRegion": {
+          "Min": { "X": 0, "Y": 0 },
+          "Max": { "X": 0, "Y": 0 },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false,
+        "bHasUObject": false,
+        "ResourceName": "Item_012"
+      }
+    }
+  },
+  {
+    "Name": "Item_013",
+    "ItemId": "Item_013",
+    "Cost": 130,
+    "bIsOwned": false,
+    "UIData": {
+      "DisplayName": "NSLOCTEXT(\"\", \"Item_013_LOC\", \"Item 013\")",
+      "Description": "Description for Item 013",
+      "Icon": {
+        "TintColor": {
+          "SpecifiedColor": { "R": 1, "G": 1, "B": 1, "A": 1 },
+          "ColorUseRule": "UseColor_Specified"
+        },
+        "DrawAs": "Image",
+        "Tiling": "NoTile",
+        "Mirroring": "NoMirror",
+        "ImageType": "NoImage",
+        "ImageSize": { "X": 32, "Y": 32 },
+        "Margin": { "Left": 0, "Top": 0, "Right": 0, "Bottom": 0 },
+        "Tint": { "R": 1, "G": 1, "B": 1, "A": 1 },
+        "ResourceObject": "None",
+        "OutlineSettings": {
+          "CornerRadii": { "X": 0, "Y": 0, "Z": 0, "W": 0 },
+          "Color": {
+            "SpecifiedColor": { "R": 0, "G": 0, "B": 0, "A": 0 },
+            "ColorUseRule": "UseColor_Specified"
+          },
+          "Width": 0,
+          "RoundingType": "HalfHeightRadius",
+          "bUseBrushTransparency": false
+        },
+        "UVRegion": {
+          "Min": { "X": 0, "Y": 0 },
+          "Max": { "X": 0, "Y": 0 },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false,
+        "bHasUObject": false,
+        "ResourceName": "Item_013"
+      }
+    }
+  }
+]

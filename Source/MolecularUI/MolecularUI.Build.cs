@@ -27,6 +27,7 @@ public class MolecularUI : ModuleRules
 			{
 				"Core",
 				"CommonUI",
+				"DeveloperSettings",
 				"FieldNotification",
 				"GameplayTags",
 				"ModelViewViewModel", 

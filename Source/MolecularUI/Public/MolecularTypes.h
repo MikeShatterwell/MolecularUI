@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CoreMinimal.h>
+#include <Misc/DataValidation.h>
 
 #include "MolecularTypes.generated.h"
 
@@ -13,22 +14,30 @@ struct FItemUIData
 	GENERATED_BODY()
 
 	FItemUIData() = default;
-	FItemUIData(const FText& InDisplayName)
-		: DisplayName(InDisplayName) {}
+	FItemUIData(const FText& InDisplayName, const FText& InDescription, const FSlateBrush& InIcon)
+		: DisplayName(InDisplayName), Description(InDescription), Icon(InIcon) {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
 	FText DisplayName = FText::FromString("Default Item");
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
+	FText Description = FText::GetEmpty();
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
+	FSlateBrush Icon = FSlateBrush();
+
 	// Add equality operator for MVVM change detection
 	bool operator==(const FItemUIData& Other) const
 	{
-		return DisplayName.EqualTo(Other.DisplayName);
+		return DisplayName.EqualTo(Other.DisplayName) 
+			&& Description.EqualTo(Other.Description)
+			&& Icon == Other.Icon;
 	}
 };
 
 // Represents a single item available for purchase in the store.
 USTRUCT(BlueprintType)
-struct FStoreItem
+struct FStoreItem : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -42,7 +51,7 @@ struct FStoreItem
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
 	int32 Cost = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
+	UPROPERTY(BlueprintReadOnly, Category = "Store Item")
 	bool bIsOwned = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
@@ -55,6 +64,31 @@ struct FStoreItem
 			&& bIsOwned == Other.bIsOwned
 			&& UIData == Other.UIData;
 	}
+
+	// Begin FTableRowBase overrides
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override
+	{
+		if (ItemId == NAME_None)
+		{
+			Context.AddError(FText::FromString("Store item must have a valid ItemId."));
+			return EDataValidationResult::Invalid;
+		}
+		if (Cost < 0)
+		{
+			Context.AddError(FText::FromString("Store item cost cannot be negative."));
+			return EDataValidationResult::Invalid;
+		}
+		if (!UIData.DisplayName.IsFromStringTable() && UIData.DisplayName.IsEmpty())
+		{
+			Context.AddWarning(FText::FromString("Store item UIData DisplayName is empty and not from a string table."));
+		}
+		if (!UIData.Description.IsFromStringTable() && UIData.Description.IsEmpty())
+		{
+			Context.AddWarning(FText::FromString("Store item UIData Description is empty and not from a string table."));
+		}
+		return EDataValidationResult::Valid;
+	}
+	// End FTableRowBase overrides
 };
 
 UENUM(BlueprintType)
@@ -65,7 +99,7 @@ enum class ETransactionType : uint8
 	Sell,
 };
 
-// Represents a user's request to purchase or sell an item.
+// Wrapper that represents a user's request to purchase or sell an item.
 // This struct is used for the "Stateful Communication" or "Intent Channel".
 // A NAME_None ItemId means no request is active.
 USTRUCT(BlueprintType)
@@ -92,7 +126,7 @@ struct FTransactionRequest
 	FString ToString() const
 	{
 		return FString::Printf(TEXT("TransactionRequest: ItemId=%s"),
-		                       *ItemId.ToString());
+							   *ItemId.ToString());
 	}
 };
 
@@ -106,7 +140,7 @@ enum class EItemInteractionType : uint8
 	Clicked,
 };
 
-/** Generic stateful channel for communicating simple widget interactions. */
+/** Wrapper - Generic stateful channel for communicating simple widget interactions for an item. */
 USTRUCT(BlueprintType)
 struct FItemInteraction
 {

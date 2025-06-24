@@ -4,7 +4,7 @@
 #include <UObject/Interface.h>
 
 #include "MolecularTypes.h"
-#include "StoreDataProvider.generated.h"
+#include "IStoreDataProvider.generated.h"
 
 struct FTransactionRequest;
 

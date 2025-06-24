@@ -6,8 +6,7 @@
 
 #include "IStoreViewModelProvider.h"
 #include "MolecularTypes.h"
-#include "DataProviders/StoreDataProvider.h"
-#include "DataProviders/MockStoreDataProvider.h"
+#include "DataProviders/IStoreDataProvider.h"
 #include "StoreSubsystem.generated.h"
 
 class UItemViewModel;
@@ -32,6 +31,7 @@ protected:
 	// Reacts to changes in the ViewModel's properties.
 	void OnFilterTextChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
 	void OnTransactionRequestChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
+	void RefreshStoreData();
 	void OnRefreshRequestedChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
 	void OnItemInteractionChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
 
@@ -57,21 +57,12 @@ protected:
 	UPROPERTY(Transient)
 	TArray<FStoreItem> CachedStoreItems;
 
-	/**
-	 * Class used to instantiate the data provider. Replace this with your
-	 * own UObject class that implements IStoreDataProvider (e.g.
-	 * UBackendStoreDataProvider) to integrate a real backend without
-	 * modifying the subsystem.
-	 */
-	UPROPERTY(EditDefaultsOnly, Category = "Store", meta = (AllowAbstract = true))
-	TSubclassOf<UObject> DataProviderClass = UMockStoreDataProvider::StaticClass();
-
 	// Instance of the provider created from DataProviderClass.
 	UPROPERTY(Transient)
-	TObjectPtr<UObject> DataProviderObject = nullptr;
+	TObjectPtr<UObject> StoreDataProviderObject = nullptr;
 
 	// Cached interface pointer to the provider instance.
-	TScriptInterface<IStoreDataProvider> DataProvider;
+	TScriptInterface<IStoreDataProvider> StoreDataProviderInterface;
 	
 	/**
 	 * Centralized factory method for ItemViewModels.

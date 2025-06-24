@@ -40,4 +40,9 @@ class MOLECULARUI_API UStoreConversionFunctions : public UBlueprintFunctionLibra
 
 	UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
 	static FText Conv_TransactionTypeToText(const ETransactionType TransactionType);
+
+	UFUNCTION(BlueprintPure, Category = "Store ViewModel|Conversion Functions")
+	static ESlateVisibility Conv_ObjectIsValidToVisibility(const UObject* Object, 
+		const ESlateVisibility ValidVisibility = ESlateVisibility::Visible, 
+		const ESlateVisibility InvalidVisibility = ESlateVisibility::Collapsed);
 }; 

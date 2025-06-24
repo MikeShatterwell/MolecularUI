@@ -4,6 +4,7 @@
 
 #include <TimerManager.h>
 
+#include "MolecularUISettings.h"
 #include "ViewModels/StoreViewModel.h"
 #include "ViewModels/ItemViewModel.h"
 #include "Utils/MolecularMacros.h"
@@ -11,7 +12,7 @@
 #include "Utils/LogMolecularUI.h"
 #include "DataProviders/MockStoreDataProvider.h"
 
-namespace
+namespace UStoreSubsystem_private
 {
 	/** RAII helper that tracks a store state for the lifetime of an async operation.
 	*
@@ -42,7 +43,7 @@ namespace
 	};
 
 	#define SCOPED_STORE_STATE(VarName, ViewModelPtr, StateTag) \
-		TSharedRef<FScopedStoreState> VarName = MakeShared<FScopedStoreState>(ViewModelPtr, StateTag)
+		TSharedRef<UStoreSubsystem_private::FScopedStoreState> VarName = MakeShared<UStoreSubsystem_private::FScopedStoreState>(ViewModelPtr, StateTag)
 }
 
 void UStoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -50,27 +51,27 @@ void UStoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	Super::Initialize(Collection);
 
-		StoreViewModel = NewObject<UStoreViewModel>(this);
+	StoreViewModel = NewObject<UStoreViewModel>(this);
 
-		// Spawn the provider from the configurable class. By default this will
-		// create the mock implementation but it can be replaced with any class
-		// that implements IStoreDataProvider.
-		if (DataProviderClass)
+	// Spawn the provider from the configurable class. By default this will
+	// create the mock implementation but it can be replaced with any class
+	// that implements IStoreDataProvider.
+	if (const TSubclassOf<UObject> DataProviderClass = UMolecularUISettings::GetDefaultStoreDataProviderClass())
+	{
+		StoreDataProviderObject = NewObject<UObject>(this, DataProviderClass);
+	}
+
+	if (IsValid(StoreDataProviderObject) && StoreDataProviderObject->GetClass()->ImplementsInterface(UStoreDataProvider::StaticClass()))
+	{
+		StoreDataProviderInterface.SetObject(StoreDataProviderObject);
+		StoreDataProviderInterface.SetInterface(Cast<IStoreDataProvider>(StoreDataProviderObject));
+
+		// Initialize mock provider with our world for timer usage.
+		if (UMockStoreDataProvider* MockProvider = Cast<UMockStoreDataProvider>(StoreDataProviderObject))
 		{
-			DataProviderObject = NewObject<UObject>(this, DataProviderClass);
+			MockProvider->InitializeProvider(this);
 		}
-
-		if (DataProviderObject && DataProviderObject->GetClass()->ImplementsInterface(UStoreDataProvider::StaticClass()))
-		{
-			DataProvider.SetObject(DataProviderObject);
-			DataProvider.SetInterface(Cast<IStoreDataProvider>(DataProviderObject));
-
-			// Initialize mock provider with our world for timer usage.
-			if (UMockStoreDataProvider* MockProvider = Cast<UMockStoreDataProvider>(DataProviderObject))
-			{
-				MockProvider->InitializeProvider(this);
-			}
-		}
+	}
 
 	// Start in a "None" state so initial loads can be triggered on first access.
 	StoreViewModel->AddStoreState(MolecularUITags::Store::State_None);
@@ -83,15 +84,16 @@ void UStoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 void UStoreSubsystem::Deinitialize()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+
+	UE_MVVM_UNBIND_FIELD(StoreViewModel, FilterText);
+	UE_MVVM_UNBIND_FIELD(StoreViewModel, TransactionRequest);
+	UE_MVVM_UNBIND_FIELD(StoreViewModel, bRefreshRequested);
+
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 	}
 
-	UE_MVVM_UNBIND_FIELD(StoreViewModel, FilterText);
-	UE_MVVM_UNBIND_FIELD(StoreViewModel, TransactionRequest);
-
-	StoreViewModel = nullptr;
 	for (const auto& Pair : ItemViewModelCache)
 	{
 		if (IsValid(Pair.Value))
@@ -100,12 +102,14 @@ void UStoreSubsystem::Deinitialize()
 			UE_MVVM_UNBIND_FIELD(Pair.Value, Interaction);
 		}
 	}
-	
+
+	StoreViewModel = nullptr;
+
 	ItemViewModelCache.Empty();
 	CachedStoreItems.Empty();
 	
-	DataProvider = nullptr;
-	DataProviderObject = nullptr;
+	StoreDataProviderObject = nullptr;
+	StoreDataProviderInterface = nullptr;
 
 	Super::Deinitialize();
 }
@@ -124,14 +128,13 @@ UStoreViewModel* UStoreSubsystem::GetStoreViewModel_Implementation()
 		StoreViewModel->RemoveStoreState(MolecularUITags::Store::State_None);
 
 		// Load stuff on initial open
-		LazyLoadStoreItems();
-		LazyLoadStoreCurrency();
-		LazyLoadOwnedItems();
+		RefreshStoreData();
 	}
 
 	return StoreViewModel;
 }
 
+/* Field Notification Handlers */
 void UStoreSubsystem::OnFilterTextChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
@@ -178,6 +181,21 @@ void UStoreSubsystem::OnTransactionRequestChanged(UObject* Object, UE::FieldNoti
 	}
 }
 
+void UStoreSubsystem::RefreshStoreData()
+{
+	// Clear any existing error message
+	StoreViewModel->SetErrorMessage(FText::GetEmpty());
+	StoreViewModel->RemoveStoreState(MolecularUITags::Store::State_Error);
+
+	// Refresh the store data
+	LazyLoadStoreItems();
+	LazyLoadOwnedItems();
+	LazyLoadStoreCurrency();
+
+	StoreViewModel->SetPreviewedItem(nullptr);
+	StoreViewModel->SetSelectedItem(nullptr);
+}
+
 void UStoreSubsystem::OnRefreshRequestedChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
@@ -185,14 +203,7 @@ void UStoreSubsystem::OnRefreshRequestedChanged(UObject* Object, UE::FieldNotifi
 	{
 		StoreViewModel->SetRefreshRequested(false); // Reset the flag
 
-		// Clear any existing error message
-		StoreViewModel->SetErrorMessage(FText::GetEmpty());
-		StoreViewModel->RemoveStoreState(MolecularUITags::Store::State_Error);
-
-		// Refresh the store data
-		LazyLoadStoreItems();
-		LazyLoadOwnedItems();
-		LazyLoadStoreCurrency();
+		RefreshStoreData();
 		
 		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Refresh requested. Reloading store data."), __FUNCTION__);
 	}
@@ -220,12 +231,14 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 		{
 			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
 			StoreViewModel->SetStatusMessage(FText::Format(
-				FText::FromString("Hovered over item: {0}"), FText::FromString(ItemName)));
+				FText::FromString("Previewing item: {0}"), FText::FromString(ItemName)));
+			StoreViewModel->SetPreviewedItem(ItemVM);
 			break;
 		}
 	case EItemInteractionType::Unhovered:
 		{
 			StoreViewModel->SetStatusMessage(FText::GetEmpty());
+			StoreViewModel->SetPreviewedItem(StoreViewModel->GetSelectedItem());
 			break;
 		}
 	case EItemInteractionType::Clicked:
@@ -235,6 +248,7 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 			StoreViewModel->SetSelectedItem(ItemVM);
 			if (ItemVM->GetItemData().bIsOwned)
 			{
+				// Passes the "client-side" check that the item can be sold.
 				StoreViewModel->SetTransactionType(ETransactionType::Sell);
 			}
 			else if (ItemVM->GetItemData().Cost <= StoreViewModel->GetPlayerCurrency())
@@ -244,6 +258,7 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 			}
 			else
 			{
+				// This is a valid state, there simply isn't any transaction available for this item.
 				StoreViewModel->SetTransactionType(ETransactionType::None);
 			}
 			break;
@@ -254,6 +269,7 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 	}
 }
 
+/* Lazy Loading Functions */
 void UStoreSubsystem::LazyLoadStoreItems()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
@@ -285,9 +301,9 @@ void UStoreSubsystem::LazyLoadStoreItems()
 		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
 	};
 
-	if (DataProvider)
+	if (StoreDataProviderInterface)
 	{
-		DataProvider->FetchStoreItems(OnSuccess, OnFailure);
+		StoreDataProviderInterface->FetchStoreItems(OnSuccess, OnFailure);
 	}
 }
 
@@ -320,9 +336,9 @@ void UStoreSubsystem::LazyLoadOwnedItems()
 		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
 	};
 
-	if (DataProvider)
+	if (StoreDataProviderInterface)
 	{
-		DataProvider->FetchOwnedItems(OnSuccess, OnFailure);
+		StoreDataProviderInterface->FetchOwnedItems(OnSuccess, OnFailure);
 	}
 }
 
@@ -347,9 +363,9 @@ void UStoreSubsystem::LazyLoadStoreCurrency()
 		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
 	};
 
-	if (DataProvider)
+	if (StoreDataProviderInterface)
 	{
-		DataProvider->FetchPlayerCurrency(OnSuccess, OnFailure);
+		StoreDataProviderInterface->FetchPlayerCurrency(OnSuccess, OnFailure);
 	}
 }
 
@@ -361,13 +377,12 @@ void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseReques
 	auto OnSuccess = [this, PurchaseScope](const FText& Status)
 	{
 		(void)PurchaseScope;
+		// Clear the transaction request and type after a successful purchase.
 		StoreViewModel->SetTransactionRequest(FTransactionRequest());
 		StoreViewModel->SetTransactionType(ETransactionType::None);
-		StoreViewModel->SetSelectedItem(nullptr);
 
-		LazyLoadStoreItems();
-		LazyLoadOwnedItems();
-		LazyLoadStoreCurrency();
+		RefreshStoreData();
+
 		StoreViewModel->SetStatusMessage(Status);
 	};
 
@@ -378,9 +393,9 @@ void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseReques
 		StoreViewModel->SetErrorMessage(Error);
 	};
 
-	if (DataProvider)
+	if (StoreDataProviderInterface)
 	{
-		DataProvider->PurchaseItem(PurchaseRequest, OnSuccess, OnFailure);
+		StoreDataProviderInterface->PurchaseItem(PurchaseRequest, OnSuccess, OnFailure);
 	}
 }
 
@@ -394,11 +409,9 @@ void UStoreSubsystem::LazySellItem(const FTransactionRequest& TransactionRequest
 		(void)SellScope;
 		StoreViewModel->SetTransactionRequest(FTransactionRequest());
 		StoreViewModel->SetTransactionType(ETransactionType::None);
-		StoreViewModel->SetSelectedItem(nullptr);
 
-		LazyLoadStoreItems();
-		LazyLoadOwnedItems();
-		LazyLoadStoreCurrency();
+		RefreshStoreData();
+
 		StoreViewModel->SetStatusMessage(Status);
 	};
 
@@ -409,12 +422,13 @@ void UStoreSubsystem::LazySellItem(const FTransactionRequest& TransactionRequest
 		StoreViewModel->SetErrorMessage(Error);
 	};
 
-	if (DataProvider)
+	if (StoreDataProviderInterface)
 	{
-		DataProvider->SellItem(TransactionRequest, OnSuccess, OnFailure);
+		StoreDataProviderInterface->SellItem(TransactionRequest, OnSuccess, OnFailure);
 	}
 }
 
+/* Utility Functions */
 void UStoreSubsystem::FilterAvailableStoreItems(const FString& FilterText)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);

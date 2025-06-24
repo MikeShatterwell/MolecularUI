@@ -70,3 +70,9 @@ FText UStoreConversionFunctions::Conv_TransactionTypeToText(const ETransactionTy
 		return FText::FromString("Unknown");
 	}
 }
+
+ESlateVisibility UStoreConversionFunctions::Conv_ObjectIsValidToVisibility(const UObject* Object,
+	const ESlateVisibility ValidVisibility, const ESlateVisibility InvalidVisibility)
+{
+	return IsValid(Object) ? ValidVisibility : InvalidVisibility;
+}

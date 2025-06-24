@@ -8,6 +8,9 @@
 #include <TimerManager.h>
 #include <Engine/World.h>
 
+#include "MolecularUISettings.h"
+#include "Utils/LogMolecularUI.h"
+
 void UMockStoreDataProvider::InitializeProvider(UObject* InOuter)
 {
 	OuterWorld = InOuter ? InOuter->GetWorld() : nullptr;
@@ -195,86 +198,70 @@ void UMockStoreDataProvider::CreateDummyStoreData()
 	const int32 NumItems = FMath::Clamp(
 		MolecularUI::CVars::Store::NumDummyItems,
 		1,
-		1000);
+		10000);
 
-	const TArray<FString> Adjectives = {
-		TEXT("Ancient"),
-		TEXT("Mystic"),
-		TEXT("Enchanted"),
-		TEXT("Crimson"),
-		TEXT("Golden"),
-		TEXT("Arcane"),
-		TEXT("Shadow"),
-		TEXT("Emerald"),
-		TEXT("Basic"),
-		TEXT("Rusty"),
-		TEXT("Cursed"),
-		TEXT("Divine"),
-		TEXT("Frost"),
-		TEXT("Fiery"),
-		TEXT("Silver"),
-		TEXT("Iron"),
-		TEXT("Steel"),
-		TEXT("Obsidian"),
-		TEXT("Celestial"),
-		TEXT("Phantom"),
-		TEXT("Legendary"),
-		TEXT("Heroic"),
-		TEXT("Epic"),
-		TEXT("Mythic"),
-		TEXT("Titanic"),
-		TEXT("Vengeful"),
-		TEXT("Radiant"),
-		TEXT("Spectral"),
-		TEXT("Wicked"),
-		TEXT("Valiant"),
-		TEXT("Brave"),
-		TEXT("Noble"),
-		TEXT("Swift"),
-	};
+	static bool bPendingDataLoad = false;
 
-	const TArray<FString> Nouns = {
-		TEXT("Sword"),
-		TEXT("Shield"),
-		TEXT("Potion"),
-		TEXT("Amulet"),
-		TEXT("Bow"),
-		TEXT("Helm"),
-		TEXT("Dagger"),
-		TEXT("Staff"),
-		TEXT("Ring"),
-		TEXT("Boots"),
-		TEXT("Gauntlets"),
-		TEXT("Cloak"),
-		TEXT("Axe"),
-		TEXT("Spear"),
-		TEXT("Wand"),
-		TEXT("Tome"),
-		TEXT("Scroll"),
-		TEXT("Belt"),
-		TEXT("Gem"),
-		TEXT("Crystal"),
-		TEXT("Lantern"),
-		TEXT("Mask"),
-		TEXT("Cape"),
-		TEXT("Quiver")
-	};
+	BackendStoreItems.Empty();
 
-	BackendStoreItems.Empty(NumItems);
+	const TSoftObjectPtr<UDataTable> StoreItemsTable = UMolecularUISettings::GetDefaultStoreItemsDataTable();
+	if (!StoreItemsTable.IsValid())
+	{
+		UE_LOG(LogMolecularUI, Error, TEXT("[%hs] Store items data table not found!"), __FUNCTION__);
+	}
+	else
+	{
+		if (bPendingDataLoad)
+		{
+			UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Pending data load for store items table, skipping."), __FUNCTION__);
+			return;
+		}
+		TArray<FStoreItem*> Items;
+		const FLoadSoftObjectPathAsyncDelegate LoadDelegate = FLoadSoftObjectPathAsyncDelegate::CreateLambda(
+			[&Items, this](const FSoftObjectPath& SoftPath, UObject* LoadedObject)
+			{
+				const UDataTable* LoadedTable = Cast<UDataTable>(LoadedObject);
+				if (!IsValid(LoadedTable))
+				{
+					UE_LOG(LogMolecularUI, Error, TEXT("[%hs] Failed to load store items data table."), __FUNCTION__);
+					bPendingDataLoad = false;
+					return;
+				}
+
+				LoadedTable->GetAllRows<FStoreItem>(__FUNCTION__, Items);
+				for (const FStoreItem* Item : Items)
+				{
+					if (!ensure(Item != nullptr))
+					{
+						continue;
+					}
+					if (!Item->ItemId.IsNone())
+					{
+						BackendStoreItems.Add(*Item);
+					}
+				}
+				bPendingDataLoad = false;
+			});
+		(void)StoreItemsTable.LoadAsync(LoadDelegate);
+		bPendingDataLoad = true;
+	}
+
 	for (int32 Index = 0; Index < NumItems; ++Index)
 	{
-		const FString Adjective = Adjectives[Index % Adjectives.Num()];
-		const FString Noun = Nouns[Index % Nouns.Num()];
-
-		const FString DisplayName = FString::Printf(TEXT("%s %s"), *Adjective, *Noun);
-		const FString ItemIdString = FString::Printf(TEXT("%s_%s_%d"), *Adjective, *Noun, Index + 1);
+		const FString DisplayName = FString::Printf(TEXT("Mock Store Item %s"), *FString::FromInt(Index + 1));
+		const FString ItemIdString = FString::Printf(TEXT("Id: %d"), Index + 1);
 		const int32 Cost = 10 + Index * 5;
+
+		FSlateBrush IconBrush = UMolecularUISettings::GetDefaultStoreIcon();
+		IconBrush.TintColor = FLinearColor::MakeRandomColor(); // Random color for the icon
 
 		BackendStoreItems.Add(FStoreItem{
 			FName{*ItemIdString},
 			Cost,
 			false,
-			FItemUIData{FText::FromString(DisplayName)}
+			FItemUIData{FText::FromString(DisplayName), 
+						FText::FromString(FString::Printf(TEXT("Dummy description for %s (Id: %s)"), *DisplayName, *ItemIdString)),
+						IconBrush}
 		});
 	}
 
@@ -285,15 +272,51 @@ void UMockStoreDataProvider::CreateDummyOwnedStoreData()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 
-	BackendOwnedStoreItems.Empty(1);
-	const FString DisplayName = TEXT("Rusty Sword");
-	const FString ItemIdString = TEXT("Rusty_Sword");
-	BackendOwnedStoreItems.Add(FStoreItem{
-		FName{*ItemIdString},
-		10,
-		true,
-		FItemUIData{FText::FromString(DisplayName)}
-	});
+	static bool bPendingDataLoad = false;
+
+	BackendOwnedStoreItems.Empty();
+	const TSoftObjectPtr<UDataTable> OwnedItemsTable = UMolecularUISettings::GetDefaultOwnedItemsDataTable();
+	if (!OwnedItemsTable.IsValid())
+	{
+		UE_LOG(LogMolecularUI, Error, TEXT("[%hs] Owned items data table not found!"), __FUNCTION__);
+	}
+	else
+	{
+		if (bPendingDataLoad)
+		{
+			UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Pending data load for owned items table, skipping."), __FUNCTION__);
+			return;
+		}
+		TArray<FStoreItem*> Items;
+		const FLoadSoftObjectPathAsyncDelegate LoadDelegate = FLoadSoftObjectPathAsyncDelegate::CreateLambda(
+			[&Items, this](const FSoftObjectPath& SoftPath, UObject* LoadedObject)
+			{
+				const UDataTable* LoadedTable = Cast<UDataTable>(LoadedObject);
+				if (!IsValid(LoadedTable))
+				{
+					UE_LOG(LogMolecularUI, Error, TEXT("[%hs] Failed to load owned items data table."), __FUNCTION__);
+					bPendingDataLoad = false;
+					return;
+				}
+				
+				LoadedTable->GetAllRows<FStoreItem>(__FUNCTION__, Items);
+				for (FStoreItem* Item : Items)
+				{
+					if (!ensure(Item != nullptr))
+					{
+						continue;
+					}
+					if (!Item->ItemId.IsNone())
+					{
+						Item->bIsOwned = true;
+						BackendOwnedStoreItems.Add(*Item);
+					}
+				}
+				bPendingDataLoad = false;
+			});
+		(void)OwnedItemsTable.LoadAsync(LoadDelegate);
+		bPendingDataLoad = true;
+	}
 
 	bDummyOwnedDataInitialized = true;
 }

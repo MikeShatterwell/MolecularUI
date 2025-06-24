@@ -25,6 +25,9 @@ public:
 	void SetSelectedItem(UItemViewModel* InViewModel) { UE_MVVM_SET_PROPERTY_VALUE(SelectedItem, InViewModel); }
 	UItemViewModel* GetSelectedItem() const { return SelectedItem; }
 
+	void SetPreviewedItem(UItemViewModel* InViewModel) { UE_MVVM_SET_PROPERTY_VALUE(PreviewedItem, InViewModel); }
+	UItemViewModel* GetPreviewedItem() const { return PreviewedItem; }
+
 	void SetTransactionRequest(const FTransactionRequest& InRequest) { UE_MVVM_SET_PROPERTY_VALUE(TransactionRequest, InRequest); }
 	FTransactionRequest GetTransactionRequest() const { return TransactionRequest; }
 
@@ -107,6 +110,9 @@ protected:
 	/* These are the "Stateful Communication Channels" that allow the ViewModel to communicate its state. */
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	TObjectPtr<UItemViewModel> SelectedItem = nullptr;
+	
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
+	TObjectPtr<UItemViewModel> PreviewedItem = nullptr;
 	
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Category = "Transaction Request")
 	ETransactionType TransactionType = ETransactionType::None;
