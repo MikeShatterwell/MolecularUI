@@ -204,7 +204,7 @@ void UMockStoreDataProvider::CreateDummyStoreData()
 
 	BackendStoreItems.Empty();
 
-	const TSoftObjectPtr<UDataTable> StoreItemsTable = UMolecularUISettings::GetDefaultStoreItemsDataTable();
+	/*const TSoftObjectPtr<UDataTable> StoreItemsTable = UMolecularUISettings::GetDefaultStoreItemsDataTable();
 	if (!StoreItemsTable.IsValid())
 	{
 		UE_LOG(LogMolecularUI, Error, TEXT("[%hs] Store items data table not found!"), __FUNCTION__);
@@ -244,7 +244,7 @@ void UMockStoreDataProvider::CreateDummyStoreData()
 			});
 		(void)StoreItemsTable.LoadAsync(LoadDelegate);
 		bPendingDataLoad = true;
-	}
+	}*/
 
 	for (int32 Index = 0; Index < NumItems; ++Index)
 	{
@@ -275,7 +275,7 @@ void UMockStoreDataProvider::CreateDummyOwnedStoreData()
 	static bool bPendingDataLoad = false;
 
 	BackendOwnedStoreItems.Empty();
-	const TSoftObjectPtr<UDataTable> OwnedItemsTable = UMolecularUISettings::GetDefaultOwnedItemsDataTable();
+	/*const TSoftObjectPtr<UDataTable> OwnedItemsTable = UMolecularUISettings::GetDefaultOwnedItemsDataTable();
 	if (!OwnedItemsTable.IsValid())
 	{
 		UE_LOG(LogMolecularUI, Error, TEXT("[%hs] Owned items data table not found!"), __FUNCTION__);
@@ -316,7 +316,7 @@ void UMockStoreDataProvider::CreateDummyOwnedStoreData()
 			});
 		(void)OwnedItemsTable.LoadAsync(LoadDelegate);
 		bPendingDataLoad = true;
-	}
+	}*/
 
 	bDummyOwnedDataInitialized = true;
 }
