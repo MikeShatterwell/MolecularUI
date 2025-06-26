@@ -48,7 +48,7 @@ namespace UStoreSubsystem_private
 
 void UStoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	Super::Initialize(Collection);
 
 	StoreViewModel = NewObject<UStoreViewModel>(this);
@@ -83,7 +83,7 @@ void UStoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UStoreSubsystem::Deinitialize()
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
 	UE_MVVM_UNBIND_FIELD(StoreViewModel, FilterText);
 	UE_MVVM_UNBIND_FIELD(StoreViewModel, TransactionRequest);
@@ -116,7 +116,7 @@ void UStoreSubsystem::Deinitialize()
 
 UStoreViewModel* UStoreSubsystem::GetStoreViewModel_Implementation()
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (!IsValid(StoreViewModel))
 	{
 		UE_LOG(LogMolecularUI, Error, TEXT("[%hs] UStoreSubsystem is not initialized yet!"), __FUNCTION__);
@@ -143,7 +143,7 @@ void UStoreSubsystem::OnFilterTextChanged(UObject* Object, UE::FieldNotification
 
 void UStoreSubsystem::OnTransactionRequestChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	const FTransactionRequest& TransactionRequest = StoreViewModel->GetTransactionRequest();
 
 	// Only process valid requests.
@@ -198,7 +198,7 @@ void UStoreSubsystem::RefreshStoreData()
 
 void UStoreSubsystem::OnRefreshRequestedChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (StoreViewModel->GetRefreshRequested())
 	{
 		StoreViewModel->SetRefreshRequested(false); // Reset the flag
@@ -211,7 +211,7 @@ void UStoreSubsystem::OnRefreshRequestedChanged(UObject* Object, UE::FieldNotifi
 
 void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	UItemViewModel* ItemVM = Cast<UItemViewModel>(Object);
 	if (!ensure(IsValid(ItemVM)))
 	{
@@ -272,7 +272,7 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 /* Lazy Loading Functions */
 void UStoreSubsystem::LazyLoadStoreItems()
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::Loading::State_Loading_Items);
 
 	auto OnSuccess = [this, LoadingScope](const TArray<FStoreItem>& Items, const FText& Status)
@@ -309,7 +309,7 @@ void UStoreSubsystem::LazyLoadStoreItems()
 
 void UStoreSubsystem::LazyLoadOwnedItems()
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::Loading::State_Loading_OwnedItems);
 
 	auto OnSuccess = [this, LoadingScope](const TArray<FStoreItem>& Items, const FText& Status)
@@ -344,7 +344,7 @@ void UStoreSubsystem::LazyLoadOwnedItems()
 
 void UStoreSubsystem::LazyLoadStoreCurrency()
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::Loading::State_Loading_Currency);
 
 	auto OnSuccess = [this, LoadingScope](int32 Currency, const FText& Status)
@@ -371,7 +371,7 @@ void UStoreSubsystem::LazyLoadStoreCurrency()
 
 void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseRequest)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(PurchaseScope, StoreViewModel, MolecularUITags::Store::State_Purchasing);
 
 	auto OnSuccess = [this, PurchaseScope](const FText& Status)
@@ -401,7 +401,7 @@ void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseReques
 
 void UStoreSubsystem::LazySellItem(const FTransactionRequest& TransactionRequest)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(SellScope, StoreViewModel, MolecularUITags::Store::State_Selling);
 
 	auto OnSuccess = [this, SellScope](const FText& Status)
@@ -431,7 +431,7 @@ void UStoreSubsystem::LazySellItem(const FTransactionRequest& TransactionRequest
 /* Utility Functions */
 void UStoreSubsystem::FilterAvailableStoreItems(const FString& FilterText)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (CachedStoreItems.IsEmpty())
 	{
 		return;

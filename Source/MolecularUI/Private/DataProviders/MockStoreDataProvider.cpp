@@ -19,7 +19,7 @@ void UMockStoreDataProvider::InitializeProvider(UObject* InOuter)
 void UMockStoreDataProvider::FetchStoreItems(TFunction<void(const TArray<FStoreItem>&, const FText&)> OnSuccess,
 											 TFunction<void(const FText&)> OnFailure)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
 	/*Callback*/
 	auto SuccessWrapper = [this, OnSuccess]()
@@ -46,7 +46,7 @@ void UMockStoreDataProvider::FetchStoreItems(TFunction<void(const TArray<FStoreI
 void UMockStoreDataProvider::FetchOwnedItems(TFunction<void(const TArray<FStoreItem>&, const FText&)> OnSuccess,
 											 TFunction<void(const FText&)> OnFailure)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
 	/*Callback*/
 	auto SuccessWrapper = [this, OnSuccess]()
@@ -73,7 +73,7 @@ void UMockStoreDataProvider::FetchOwnedItems(TFunction<void(const TArray<FStoreI
 void UMockStoreDataProvider::FetchPlayerCurrency(TFunction<void(int32, const FText&)> OnSuccess,
 												 TFunction<void(const FText&)> OnFailure)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
 	/*Callback*/
 	auto SuccessWrapper = [this, OnSuccess]()
@@ -101,7 +101,7 @@ void UMockStoreDataProvider::PurchaseItem(const FTransactionRequest& Request,
 										  TFunction<void(const FText&)> OnSuccess,
 										  TFunction<void(const FText&)> OnFailure)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
 	/*Callback*/
 	auto SuccessWrapper = [this, Request, OnSuccess, OnFailure]()
@@ -147,7 +147,7 @@ void UMockStoreDataProvider::PurchaseItem(const FTransactionRequest& Request,
 void UMockStoreDataProvider::SellItem(const FTransactionRequest& Request, TFunction<void(const FText&)> OnSuccess,
 									  TFunction<void(const FText&)> OnFailure)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
 	/*Callback*/
 	auto SuccessWrapper = [this, Request, OnSuccess, OnFailure]()
@@ -193,7 +193,7 @@ void UMockStoreDataProvider::SellItem(const FTransactionRequest& Request, TFunct
 
 void UMockStoreDataProvider::CreateDummyStoreData()
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
 	const int32 NumItems = FMath::Clamp(
 		MolecularUI::CVars::Store::NumDummyItems,
@@ -270,7 +270,7 @@ void UMockStoreDataProvider::CreateDummyStoreData()
 
 void UMockStoreDataProvider::CreateDummyOwnedStoreData()
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
 	static bool bPendingDataLoad = false;
 
@@ -323,7 +323,7 @@ void UMockStoreDataProvider::CreateDummyOwnedStoreData()
 
 void UMockStoreDataProvider::CreateDummyPlayerCurrency()
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
 	BackendPlayerCurrency = 500;
 	bDummyPlayerCurrencyInitialized = true;
