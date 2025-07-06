@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CoreMinimal.h>
+#include <GameplayTagContainer.h>
 #include <Misc/DataValidation.h>
 
 #include "MolecularTypes.generated.h"
@@ -14,8 +15,8 @@ struct FItemUIData
 	GENERATED_BODY()
 
 	FItemUIData() = default;
-	FItemUIData(const FText& InDisplayName, const FText& InDescription, const FSlateBrush& InIcon)
-		: DisplayName(InDisplayName), Description(InDescription), Icon(InIcon) {}
+	FItemUIData(const FText& InDisplayName, const FText& InDescription, const FSlateBrush& InIcon, const FGameplayTagContainer& InCategories)
+		: DisplayName(InDisplayName), Description(InDescription), Icon(InIcon), Categories (InCategories) {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
 	FText DisplayName = FText::FromString("Default Item");
@@ -26,12 +27,16 @@ struct FItemUIData
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
 	FSlateBrush Icon = FSlateBrush();
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
+	FGameplayTagContainer Categories;
+
 	// Add equality operator for MVVM change detection
 	bool operator==(const FItemUIData& Other) const
 	{
 		return DisplayName.EqualTo(Other.DisplayName) 
 			&& Description.EqualTo(Other.Description)
-			&& Icon == Other.Icon;
+			&& Icon == Other.Icon
+			&& Categories == Other.Categories;
 	}
 };
 

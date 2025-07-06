@@ -9,6 +9,7 @@
 #include <Engine/World.h>
 
 #include "MolecularUISettings.h"
+#include "MolecularUITags.h"
 #include "Utils/LogMolecularUI.h"
 
 void UMockStoreDataProvider::InitializeProvider(UObject* InOuter)
@@ -24,11 +25,19 @@ void UMockStoreDataProvider::FetchStoreItems(TFunction<void(const TArray<FStoreI
 	/*Callback*/
 	auto SuccessWrapper = [this, OnSuccess]()
 	{
+		auto OnDataCreated = [this, OnSuccess]()
+		{
+			OnSuccess(BackendStoreItems, FText::FromString(TEXT("Store items loaded.")));
+		};
+
 		if (!bDummyStoreDataInitialized)
 		{
-			CreateDummyStoreData();
+			CreateDummyStoreData(OnDataCreated);
 		}
-		OnSuccess(BackendStoreItems, FText::FromString(TEXT("Store items loaded.")));
+		else
+		{
+			OnDataCreated();
+		}
 	};
 
 	/*Callback*/
@@ -51,11 +60,19 @@ void UMockStoreDataProvider::FetchOwnedItems(TFunction<void(const TArray<FStoreI
 	/*Callback*/
 	auto SuccessWrapper = [this, OnSuccess]()
 	{
+		auto OnDataCreated = [this, OnSuccess]()
+		{
+			OnSuccess(BackendOwnedStoreItems, FText::FromString(TEXT("Owned items loaded.")));
+		};
+
 		if (!bDummyOwnedDataInitialized)
 		{
-			CreateDummyOwnedStoreData();
+			CreateDummyOwnedStoreData(OnDataCreated);
 		}
-		OnSuccess(BackendOwnedStoreItems, FText::FromString(TEXT("Owned items loaded.")));
+		else
+		{
+			OnDataCreated();
+		}
 	};
 
 	/*Callback*/
@@ -191,134 +208,116 @@ void UMockStoreDataProvider::SellItem(const FTransactionRequest& Request, TFunct
 					MolecularUI::CVars::Transaction::MaxDelay);
 }
 
-void UMockStoreDataProvider::CreateDummyStoreData()
+void UMockStoreDataProvider::LoadItemsFromDataTable(
+	const TSoftObjectPtr<UDataTable>& DataTable,
+	TArray<FStoreItem>& TargetArray,
+	TFunction<void()> OnComplete) const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
-	const int32 NumItems = FMath::Clamp(
+	if (!DataTable.ToSoftObjectPath().IsValid())
+	{
+		UE_LOG(LogMolecularUI, Error, TEXT("[%hs] Data table is not valid!"), __FUNCTION__);
+		return;
+	}
+
+	const FLoadSoftObjectPathAsyncDelegate LoadDelegate = FLoadSoftObjectPathAsyncDelegate::CreateLambda(
+		[this, &TargetArray, OnComplete](const FSoftObjectPath& SoftPath, UObject* LoadedObject)
+		{
+			const UDataTable* LoadedTable = Cast<UDataTable>(LoadedObject);
+			if (!IsValid(LoadedTable))
+			{
+				UE_LOG(LogMolecularUI, Error, TEXT("[%hs] Failed to load data table."), __FUNCTION__);
+				if (OnComplete)
+				{
+					OnComplete();
+				}
+				return;
+			}
+
+			TArray<FStoreItem*> Items;
+			LoadedTable->GetAllRows<FStoreItem>(__FUNCTION__, Items);
+			for (const FStoreItem* Item : Items)
+			{
+				if (ensure(Item != nullptr) && !Item->ItemId.IsNone())
+				{
+					TargetArray.Add(*Item);
+				}
+			}
+			if (OnComplete)
+			{
+				OnComplete();
+			}
+		});
+
+	(void)DataTable.LoadAsync(LoadDelegate);
+}
+
+void UMockStoreDataProvider::CreateDummyStoreData(TFunction<void()> OnComplete)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
+
+	BackendStoreItems.Empty();
+
+	auto OnDataTableLoaded = [this, OnComplete]()
+	{
+		const int32 NumItems = FMath::Clamp(
 		MolecularUI::CVars::Store::NumDummyItems,
 		1,
 		10000);
 
-	static bool bPendingDataLoad = false;
-
-	BackendStoreItems.Empty();
-
-	/*const TSoftObjectPtr<UDataTable> StoreItemsTable = UMolecularUISettings::GetDefaultStoreItemsDataTable();
-	if (!StoreItemsTable.IsValid())
-	{
-		UE_LOG(LogMolecularUI, Error, TEXT("[%hs] Store items data table not found!"), __FUNCTION__);
-	}
-	else
-	{
-		if (bPendingDataLoad)
+		for (int32 Index = 0; Index < NumItems; ++Index)
 		{
-			UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Pending data load for store items table, skipping."), __FUNCTION__);
-			return;
-		}
-		TArray<FStoreItem*> Items;
-		const FLoadSoftObjectPathAsyncDelegate LoadDelegate = FLoadSoftObjectPathAsyncDelegate::CreateLambda(
-			[&Items, this](const FSoftObjectPath& SoftPath, UObject* LoadedObject)
-			{
-				const UDataTable* LoadedTable = Cast<UDataTable>(LoadedObject);
-				if (!IsValid(LoadedTable))
-				{
-					UE_LOG(LogMolecularUI, Error, TEXT("[%hs] Failed to load store items data table."), __FUNCTION__);
-					bPendingDataLoad = false;
-					return;
-				}
+			const FString DisplayName = FString::Printf(TEXT("Mock Store Item %s"), *FString::FromInt(Index + 1));
+			const FString ItemIdString = FString::Printf(TEXT("Id: %d"), Index + 1);
+			const int32 Cost = 10 + Index * 5;
 
-				LoadedTable->GetAllRows<FStoreItem>(__FUNCTION__, Items);
-				for (const FStoreItem* Item : Items)
-				{
-					if (!ensure(Item != nullptr))
-					{
-						continue;
-					}
-					if (!Item->ItemId.IsNone())
-					{
-						BackendStoreItems.Add(*Item);
-					}
-				}
-				bPendingDataLoad = false;
+			FSlateBrush IconBrush = UMolecularUISettings::GetDefaultStoreIcon();
+			IconBrush.TintColor = FLinearColor::MakeRandomColor(); // Random color for the icon
+
+			BackendStoreItems.Add(FStoreItem{
+				FName{*ItemIdString},
+				Cost,
+				false,
+				FItemUIData{FText::FromString(DisplayName), 
+							FText::FromString(FString::Printf(TEXT("Dummy description for %s (Id: %s)"), *DisplayName, *ItemIdString)),
+							IconBrush,
+				FGameplayTagContainer(MolecularUITags::Item::Category::Other)}
 			});
-		(void)StoreItemsTable.LoadAsync(LoadDelegate);
-		bPendingDataLoad = true;
-	}*/
+		}
 
-	for (int32 Index = 0; Index < NumItems; ++Index)
-	{
-		const FString DisplayName = FString::Printf(TEXT("Mock Store Item %s"), *FString::FromInt(Index + 1));
-		const FString ItemIdString = FString::Printf(TEXT("Id: %d"), Index + 1);
-		const int32 Cost = 10 + Index * 5;
+		bDummyStoreDataInitialized = true;
+		if (OnComplete)
+		{
+			OnComplete();
+		}
+	};
 
-		FSlateBrush IconBrush = UMolecularUISettings::GetDefaultStoreIcon();
-		IconBrush.TintColor = FLinearColor::MakeRandomColor(); // Random color for the icon
-
-		BackendStoreItems.Add(FStoreItem{
-			FName{*ItemIdString},
-			Cost,
-			false,
-			FItemUIData{FText::FromString(DisplayName), 
-						FText::FromString(FString::Printf(TEXT("Dummy description for %s (Id: %s)"), *DisplayName, *ItemIdString)),
-						IconBrush}
-		});
-	}
-
-	bDummyStoreDataInitialized = true;
+	LoadItemsFromDataTable(
+		UMolecularUISettings::GetDefaultStoreItemsDataTable(),
+		BackendStoreItems,
+		OnDataTableLoaded);
 }
 
-void UMockStoreDataProvider::CreateDummyOwnedStoreData()
+void UMockStoreDataProvider::CreateDummyOwnedStoreData(TFunction<void()> OnComplete)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
-	static bool bPendingDataLoad = false;
-
 	BackendOwnedStoreItems.Empty();
-	/*const TSoftObjectPtr<UDataTable> OwnedItemsTable = UMolecularUISettings::GetDefaultOwnedItemsDataTable();
-	if (!OwnedItemsTable.IsValid())
-	{
-		UE_LOG(LogMolecularUI, Error, TEXT("[%hs] Owned items data table not found!"), __FUNCTION__);
-	}
-	else
-	{
-		if (bPendingDataLoad)
-		{
-			UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Pending data load for owned items table, skipping."), __FUNCTION__);
-			return;
-		}
-		TArray<FStoreItem*> Items;
-		const FLoadSoftObjectPathAsyncDelegate LoadDelegate = FLoadSoftObjectPathAsyncDelegate::CreateLambda(
-			[&Items, this](const FSoftObjectPath& SoftPath, UObject* LoadedObject)
-			{
-				const UDataTable* LoadedTable = Cast<UDataTable>(LoadedObject);
-				if (!IsValid(LoadedTable))
-				{
-					UE_LOG(LogMolecularUI, Error, TEXT("[%hs] Failed to load owned items data table."), __FUNCTION__);
-					bPendingDataLoad = false;
-					return;
-				}
-				
-				LoadedTable->GetAllRows<FStoreItem>(__FUNCTION__, Items);
-				for (FStoreItem* Item : Items)
-				{
-					if (!ensure(Item != nullptr))
-					{
-						continue;
-					}
-					if (!Item->ItemId.IsNone())
-					{
-						Item->bIsOwned = true;
-						BackendOwnedStoreItems.Add(*Item);
-					}
-				}
-				bPendingDataLoad = false;
-			});
-		(void)OwnedItemsTable.LoadAsync(LoadDelegate);
-		bPendingDataLoad = true;
-	}*/
 
-	bDummyOwnedDataInitialized = true;
+	auto OnDataTableLoaded = [this, OnComplete]()
+	{
+		bDummyOwnedDataInitialized = true;
+		if (OnComplete)
+		{
+			OnComplete();
+		}
+	};
+
+	LoadItemsFromDataTable(
+		UMolecularUISettings::GetDefaultOwnedItemsDataTable(),
+		BackendOwnedStoreItems,
+		OnDataTableLoaded);
 }
 
 void UMockStoreDataProvider::CreateDummyPlayerCurrency()

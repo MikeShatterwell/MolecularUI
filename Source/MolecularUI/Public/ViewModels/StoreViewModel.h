@@ -46,7 +46,7 @@ public:
 	void AddStoreState(const FGameplayTag& State)
 	{
 		FGameplayTagContainer NewStates = StoreStates;
-		NewStates.RemoveTag(MolecularUITags::Store::State_Ready);
+		NewStates.RemoveTag(MolecularUITags::Store::State::Ready);
 		NewStates.AddTag(State);
 		SetStoreStates(NewStates);
 	}
@@ -57,7 +57,7 @@ public:
 		NewStates.RemoveTag(State);
 		if (NewStates.Num() == 0)
 		{
-			NewStates.AddTag(MolecularUITags::Store::State_Ready);
+			NewStates.AddTag(MolecularUITags::Store::State::Ready);
 		}
 		SetStoreStates(NewStates);
 	}

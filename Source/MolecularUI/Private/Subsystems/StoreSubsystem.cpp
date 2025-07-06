@@ -74,7 +74,7 @@ void UStoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 
 	// Start in a "None" state so initial loads can be triggered on first access.
-	StoreViewModel->AddStoreState(MolecularUITags::Store::State_None);
+	StoreViewModel->AddStoreState(MolecularUITags::Store::State::None);
 
 	UE_MVVM_BIND_FIELD(StoreViewModel, FilterText, OnFilterTextChanged);
 	UE_MVVM_BIND_FIELD(StoreViewModel, TransactionRequest, OnTransactionRequestChanged);
@@ -123,9 +123,9 @@ UStoreViewModel* UStoreSubsystem::GetStoreViewModel_Implementation()
 		return nullptr;
 	}
 
-	if (StoreViewModel->HasStoreState(MolecularUITags::Store::State_None))
+	if (StoreViewModel->HasStoreState(MolecularUITags::Store::State::None))
 	{
-		StoreViewModel->RemoveStoreState(MolecularUITags::Store::State_None);
+		StoreViewModel->RemoveStoreState(MolecularUITags::Store::State::None);
 
 		// Load stuff on initial open
 		RefreshStoreData();
@@ -155,14 +155,14 @@ void UStoreSubsystem::OnTransactionRequestChanged(UObject* Object, UE::FieldNoti
 	}
 
 	// If the store isn't ready, queue or reset the request and exit early.
-	if (!StoreViewModel->HasStoreState(MolecularUITags::Store::State_Ready))
+	if (!StoreViewModel->HasStoreState(MolecularUITags::Store::State::Ready))
 	{
 		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Store not ready. Failing transaction request for %s"), __FUNCTION__,
 			   *TransactionRequest.ToString());
 
 		StoreViewModel->SetTransactionRequest(FTransactionRequest());
 		StoreViewModel->SetErrorMessage(FText::FromString("Store not ready. Please try again later."));
-		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
+		StoreViewModel->AddStoreState(MolecularUITags::Store::State::Error);
 		return;
 	}
 
@@ -185,7 +185,7 @@ void UStoreSubsystem::RefreshStoreData()
 {
 	// Clear any existing error message
 	StoreViewModel->SetErrorMessage(FText::GetEmpty());
-	StoreViewModel->RemoveStoreState(MolecularUITags::Store::State_Error);
+	StoreViewModel->RemoveStoreState(MolecularUITags::Store::State::Error);
 
 	// Refresh the store data
 	LazyLoadStoreItems();
@@ -273,7 +273,7 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 void UStoreSubsystem::LazyLoadStoreItems()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
-	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::Loading::State_Loading_Items);
+	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::State::Loading::Items);
 
 	auto OnSuccess = [this, LoadingScope](const TArray<FStoreItem>& Items, const FText& Status)
 	{
@@ -298,7 +298,7 @@ void UStoreSubsystem::LazyLoadStoreItems()
 		(void)LoadingScope;
 		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Failure loading store items."), __FUNCTION__);
 		StoreViewModel->SetErrorMessage(Error);
-		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
+		StoreViewModel->AddStoreState(MolecularUITags::Store::State::Error);
 	};
 
 	if (StoreDataProviderInterface)
@@ -310,7 +310,7 @@ void UStoreSubsystem::LazyLoadStoreItems()
 void UStoreSubsystem::LazyLoadOwnedItems()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
-	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::Loading::State_Loading_OwnedItems);
+	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::State::Loading::OwnedItems);
 
 	auto OnSuccess = [this, LoadingScope](const TArray<FStoreItem>& Items, const FText& Status)
 	{
@@ -333,7 +333,7 @@ void UStoreSubsystem::LazyLoadOwnedItems()
 		(void)LoadingScope;
 		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Failure loading owned items."), __FUNCTION__);
 		StoreViewModel->SetErrorMessage(Error);
-		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
+		StoreViewModel->AddStoreState(MolecularUITags::Store::State::Error);
 	};
 
 	if (StoreDataProviderInterface)
@@ -345,7 +345,7 @@ void UStoreSubsystem::LazyLoadOwnedItems()
 void UStoreSubsystem::LazyLoadStoreCurrency()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
-	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::Loading::State_Loading_Currency);
+	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::State::Loading::Currency);
 
 	auto OnSuccess = [this, LoadingScope](int32 Currency, const FText& Status)
 	{
@@ -360,7 +360,7 @@ void UStoreSubsystem::LazyLoadStoreCurrency()
 		(void)LoadingScope;
 		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] Failure loading store currency."), __FUNCTION__);
 		StoreViewModel->SetErrorMessage(Error);
-		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
+		StoreViewModel->AddStoreState(MolecularUITags::Store::State::Error);
 	};
 
 	if (StoreDataProviderInterface)
@@ -372,7 +372,7 @@ void UStoreSubsystem::LazyLoadStoreCurrency()
 void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseRequest)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
-	SCOPED_STORE_STATE(PurchaseScope, StoreViewModel, MolecularUITags::Store::State_Purchasing);
+	SCOPED_STORE_STATE(PurchaseScope, StoreViewModel, MolecularUITags::Store::State::Purchasing);
 
 	auto OnSuccess = [this, PurchaseScope](const FText& Status)
 	{
@@ -389,7 +389,7 @@ void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseReques
 	auto OnFailure = [this, PurchaseScope](const FText& Error)
 	{
 		(void)PurchaseScope;
-		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
+		StoreViewModel->AddStoreState(MolecularUITags::Store::State::Error);
 		StoreViewModel->SetErrorMessage(Error);
 	};
 
@@ -402,7 +402,7 @@ void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseReques
 void UStoreSubsystem::LazySellItem(const FTransactionRequest& TransactionRequest)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
-	SCOPED_STORE_STATE(SellScope, StoreViewModel, MolecularUITags::Store::State_Selling);
+	SCOPED_STORE_STATE(SellScope, StoreViewModel, MolecularUITags::Store::State::Selling);
 
 	auto OnSuccess = [this, SellScope](const FText& Status)
 	{
@@ -418,7 +418,7 @@ void UStoreSubsystem::LazySellItem(const FTransactionRequest& TransactionRequest
 	auto OnFailure = [this, SellScope](const FText& Error)
 	{
 		(void)SellScope;
-		StoreViewModel->AddStoreState(MolecularUITags::Store::State_Error);
+		StoreViewModel->AddStoreState(MolecularUITags::Store::State::Error);
 		StoreViewModel->SetErrorMessage(Error);
 	};
 

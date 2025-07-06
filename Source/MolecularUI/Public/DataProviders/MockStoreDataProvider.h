@@ -33,9 +33,22 @@ public:
 	// End IStoreDataProvider implementation
 
 protected:
-	void CreateDummyStoreData();
-	void CreateDummyOwnedStoreData();
+	void CreateDummyStoreData(TFunction<void()> OnComplete);
+	void CreateDummyOwnedStoreData(TFunction<void()> OnComplete);
 	void CreateDummyPlayerCurrency();
+
+
+	/**
+	 * Asynchronously loads items from a given data table into the target array, optionally marking them as owned.
+	 *
+	 * @param DataTable The soft reference to the data table from which items will be loaded.
+	 * @param TargetArray The array where loaded items will be stored.
+	 * @param OnComplete A callback function that will be executed when the loading process is complete.
+	 */
+	void LoadItemsFromDataTable(
+	const TSoftObjectPtr<UDataTable>& DataTable,
+	TArray<FStoreItem>& TargetArray,
+	TFunction<void()> OnComplete) const;
 
 	// Begin UObject overrides
 	virtual UWorld* GetWorld() const override;
@@ -56,5 +69,7 @@ protected:
 	bool bDummyStoreDataInitialized = false;
 	bool bDummyOwnedDataInitialized = false;
 	bool bDummyPlayerCurrencyInitialized = false;
-};
 
+	bool bIsLoadingStoreItems = false;
+	bool bIsLoadingOwnedItems = false;
+};
