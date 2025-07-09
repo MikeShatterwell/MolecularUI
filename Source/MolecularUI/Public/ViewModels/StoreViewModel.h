@@ -10,6 +10,7 @@
 
 #include "StoreViewModel.generated.h"
 
+class UCategoryViewModel;
 class UItemViewModel;
 
 UCLASS(Blueprintable, DisplayName = "Store ViewModel")
@@ -30,6 +31,13 @@ public:
 
 	void SetTransactionRequest(const FTransactionRequest& InRequest) { UE_MVVM_SET_PROPERTY_VALUE(TransactionRequest, InRequest); }
 	FTransactionRequest GetTransactionRequest() const { return TransactionRequest; }
+
+	void SetSelectedCategories(const TArray<TObjectPtr<UCategoryViewModel>>& InCategories)
+	{
+		UE_MVVM_SET_PROPERTY_VALUE(SelectedCategories, InCategories);
+	}
+
+	const TArray<TObjectPtr<UCategoryViewModel>>& GetSelectedCategories() const { return SelectedCategories; }
 
 	void SetTransactionType(const ETransactionType InType) { UE_MVVM_SET_PROPERTY_VALUE(TransactionType, InType); }
 	ETransactionType GetTransactionType() const { return TransactionType; }
@@ -87,12 +95,21 @@ protected:
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	int32 PlayerCurrency;
 
-
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	TArray<TObjectPtr<UItemViewModel>> AvailableItems;
 
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	TArray<TObjectPtr<UItemViewModel>> OwnedItems;
+
+
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter = SetStoreStates, Getter = GetStoreStates, Category = "Store ViewModel")
+	FGameplayTagContainer StoreStates;
+
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
+	FText ErrorMessage = FText::GetEmpty();
+
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
+	FText StatusMessage = FText::GetEmpty();
 
 
 	/* These are the "Intent Channels" that allow the ViewModel to communicate with the Model. */
@@ -106,24 +123,17 @@ protected:
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter = "SetRefreshRequested", Getter = "GetRefreshRequested", Category = "Store ViewModel | Intent")
 	bool bRefreshRequested = false;
 
-	
-	/* These are the "Stateful Communication Channels" that allow the ViewModel to communicate its state. */
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	TObjectPtr<UItemViewModel> SelectedItem = nullptr;
 	
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	TObjectPtr<UItemViewModel> PreviewedItem = nullptr;
-	
+
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
+	TArray<TObjectPtr<UCategoryViewModel>> SelectedCategories;
+
+
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Category = "Transaction Request")
 	ETransactionType TransactionType = ETransactionType::None;
-
-	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter = SetStoreStates, Getter = GetStoreStates, Category = "Store ViewModel")
-	FGameplayTagContainer StoreStates;
-
-	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
-	FText ErrorMessage = FText::GetEmpty();
-
-	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
-	FText StatusMessage = FText::GetEmpty();
 };
 

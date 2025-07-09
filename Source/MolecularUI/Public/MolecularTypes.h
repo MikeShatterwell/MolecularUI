@@ -8,35 +8,31 @@
 
 #include "MolecularTypes.generated.h"
 
-// Represents the data only the UI would care about for an item.
+// Represents common data only the UI cares about.
 USTRUCT(BlueprintType)
-struct FItemUIData
+struct FStandardUIData
 {
 	GENERATED_BODY()
 
-	FItemUIData() = default;
-	FItemUIData(const FText& InDisplayName, const FText& InDescription, const FSlateBrush& InIcon, const FGameplayTagContainer& InCategories)
-		: DisplayName(InDisplayName), Description(InDescription), Icon(InIcon), Categories (InCategories) {}
+	FStandardUIData() = default;
+	FStandardUIData(const FText& InDisplayName, const FText& InDescription, const FSlateBrush& InIcon)
+		: DisplayName(InDisplayName), Description(InDescription), Icon(InIcon) {}
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
-	FText DisplayName = FText::FromString("Default Item");
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FText DisplayName = FText::FromString("Display Name");
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FText Description = FText::GetEmpty();
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FSlateBrush Icon = FSlateBrush();
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
-	FGameplayTagContainer Categories;
-
 	// Add equality operator for MVVM change detection
-	bool operator==(const FItemUIData& Other) const
+	bool operator==(const FStandardUIData& Other) const
 	{
 		return DisplayName.EqualTo(Other.DisplayName) 
 			&& Description.EqualTo(Other.Description)
-			&& Icon == Other.Icon
-			&& Categories == Other.Categories;
+			&& Icon == Other.Icon;
 	}
 };
 
@@ -47,8 +43,8 @@ struct FStoreItem : public FTableRowBase
 	GENERATED_BODY()
 
 	FStoreItem() = default;
-	FStoreItem(const FName& InId, const int32 InCost, const bool bInIsOwned, const FItemUIData& InUIData)
-		: ItemId(InId), Cost(InCost), bIsOwned(bInIsOwned), UIData(InUIData) {}
+	FStoreItem(const FName& InId, const int32 InCost, const bool bInIsOwned, const FStandardUIData& InUIData, const FGameplayTagContainer& InCategories)
+		: ItemId(InId), Cost(InCost), bIsOwned(bInIsOwned), UIData(InUIData), Categories(InCategories) {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
 	FName ItemId = NAME_None;
@@ -56,18 +52,22 @@ struct FStoreItem : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
 	int32 Cost = 0;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Store Item")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
 	bool bIsOwned = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item")
-	FItemUIData UIData;
+	FStandardUIData UIData;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Store Item", meta = (Categories = "Item.Category"))
+	FGameplayTagContainer Categories;
 
 	bool operator==(const FStoreItem& Other) const
 	{
 		return ItemId == Other.ItemId
 			&& Cost == Other.Cost
 			&& bIsOwned == Other.bIsOwned
-			&& UIData == Other.UIData;
+			&& UIData == Other.UIData
+			&& Categories == Other.Categories;
 	}
 
 	// Begin FTableRowBase overrides
@@ -137,7 +137,7 @@ struct FTransactionRequest
 
 /** Basic interaction events that widgets can choose to emit. */
 UENUM(BlueprintType)
-enum class EItemInteractionType : uint8
+enum class EStatefulInteraction : uint8
 {
 	None,
 	Hovered,
@@ -145,40 +145,45 @@ enum class EItemInteractionType : uint8
 	Clicked,
 };
 
-/** Wrapper - Generic stateful channel for communicating simple widget interactions for an item. */
+/** Wrapper - Generic stateful channel for communicating simple widget interactions through the VM to any listeners. */
 USTRUCT(BlueprintType)
-struct FItemInteraction
+struct FInteractionState
 {
 	GENERATED_BODY()
 
-	FItemInteraction() = default;
-	explicit FItemInteraction(const EItemInteractionType InType)
-			: Type(InType) {}
+	explicit FInteractionState(const EStatefulInteraction InType = EStatefulInteraction::None, const FName InSource = NAME_None)
+		: Type(InType), Source(InSource) {}
 
 	/** The latest interaction that occurred. */
 	UPROPERTY(BlueprintReadWrite, Category = "Interaction")
-	EItemInteractionType Type = EItemInteractionType::None;
+	EStatefulInteraction Type = EStatefulInteraction::None;
 
-	bool operator==(const FItemInteraction& Other) const
+	/* The source of the interaction (e.g., "FilterTab", "DetailsPanel") */
+	UPROPERTY(BlueprintReadWrite, Category = "Interaction")
+	FName Source = NAME_None; 
+
+	bool operator==(const FInteractionState& Other) const
 	{
-		return Type == Other.Type;
+		return Type == Other.Type && Source == Other.Source;
 	}
 
 	bool IsValid() const
 	{
-		return Type != EItemInteractionType::None;
+		return Type != EStatefulInteraction::None && Source != NAME_None;
 	}
 
 	FString ToString() const
 	{
+		FString TypeString;
 		switch (Type)
 		{
-			case EItemInteractionType::None: return TEXT("None");
-			case EItemInteractionType::Hovered: return TEXT("Hovered");
-			case EItemInteractionType::Unhovered: return TEXT("Unhovered");
-			case EItemInteractionType::Clicked: return TEXT("Clicked");
-			default: return TEXT("Unknown");
+			case EStatefulInteraction::None: TypeString = TEXT("None"); break;
+			case EStatefulInteraction::Hovered: TypeString = TEXT("Hovered"); break;
+			case EStatefulInteraction::Unhovered: TypeString = TEXT("Unhovered"); break;
+			case EStatefulInteraction::Clicked: TypeString = TEXT("Clicked"); break;
+			default: TypeString = TEXT("Unknown"); break;
 		}
+		return FString::Printf(TEXT("InteractionState: Type=%s, Source=%s"), *TypeString, *Source.ToString());
 	}
 };
 

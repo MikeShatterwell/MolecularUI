@@ -279,11 +279,12 @@ void UMockStoreDataProvider::CreateDummyStoreData(TFunction<void()> OnComplete)
 				FName{*ItemIdString},
 				Cost,
 				false,
-				FItemUIData{FText::FromString(DisplayName), 
-							FText::FromString(FString::Printf(TEXT("Dummy description for %s (Id: %s)"), *DisplayName, *ItemIdString)),
-							IconBrush,
+				FStandardUIData{
+					/*InDisplayName*/ FText::FromString(DisplayName),
+					/*InDescription*/ FText::FromString(FString::Printf(TEXT("Dummy description for %s (Id: %s)"), *DisplayName, *ItemIdString)),
+					/*InIcon*/ IconBrush},
 				FGameplayTagContainer(MolecularUITags::Item::Category::Other)}
-			});
+			);
 		}
 
 		bDummyStoreDataInitialized = true;

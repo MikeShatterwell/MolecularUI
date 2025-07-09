@@ -11,6 +11,7 @@
 #include "MolecularUITags.h"
 #include "Utils/LogMolecularUI.h"
 #include "DataProviders/MockStoreDataProvider.h"
+#include "ViewModels/CategoryViewModel.h"
 
 namespace UStoreSubsystem_private
 {
@@ -77,6 +78,7 @@ void UStoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	StoreViewModel->AddStoreState(MolecularUITags::Store::State::None);
 
 	UE_MVVM_BIND_FIELD(StoreViewModel, FilterText, OnFilterTextChanged);
+	UE_MVVM_BIND_FIELD(StoreViewModel, SelectedCategories, OnSelectedCategoriesChanged);
 	UE_MVVM_BIND_FIELD(StoreViewModel, TransactionRequest, OnTransactionRequestChanged);
 	UE_MVVM_BIND_FIELD(StoreViewModel, bRefreshRequested, OnRefreshRequestedChanged);
 }
@@ -86,6 +88,7 @@ void UStoreSubsystem::Deinitialize()
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
 	UE_MVVM_UNBIND_FIELD(StoreViewModel, FilterText);
+	UE_MVVM_UNBIND_FIELD(StoreViewModel, SelectedCategories);
 	UE_MVVM_UNBIND_FIELD(StoreViewModel, TransactionRequest);
 	UE_MVVM_UNBIND_FIELD(StoreViewModel, bRefreshRequested);
 
@@ -94,12 +97,20 @@ void UStoreSubsystem::Deinitialize()
 		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 	}
 
-	for (const auto& Pair : ItemViewModelCache)
+	// Unbind any field notifications from the ItemViewModel.
+	for (const TTuple<FName, TObjectPtr<UItemViewModel>>& Pair : ItemViewModelCache)
 	{
-		if (IsValid(Pair.Value))
+		UItemViewModel* ItemVM = Pair.Value;
+		if (IsValid(ItemVM))
 		{
-			// Unbind any field notifications from the ItemViewModel.
-			UE_MVVM_UNBIND_FIELD(Pair.Value, Interaction);
+			UE_MVVM_UNBIND_FIELD(ItemVM, Interaction);
+			for (UCategoryViewModel* CategoryVM : ItemVM->GetCategoryViewModels())
+			{
+				if (IsValid(CategoryVM))
+				{
+					UE_MVVM_UNBIND_FIELD(CategoryVM, Interaction);
+				}
+			}
 		}
 	}
 
@@ -138,7 +149,13 @@ UStoreViewModel* UStoreSubsystem::GetStoreViewModel_Implementation()
 void UStoreSubsystem::OnFilterTextChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
-	FilterAvailableStoreItems(StoreViewModel->GetFilterText());
+	FilterAvailableStoreItems();
+}
+
+void UStoreSubsystem::OnSelectedCategoriesChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
+	FilterAvailableStoreItems();
 }
 
 void UStoreSubsystem::OnTransactionRequestChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
@@ -218,33 +235,38 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 		return;
 	}
 
-	const FItemInteraction& Interaction = ItemVM->GetInteraction();
+	const FInteractionState& Interaction = ItemVM->GetInteraction();
 	if (!Interaction.IsValid())
 	{
 		return; // No valid interaction to process
 	}
+	
+	const FString& SourceName = Interaction.Source.ToString();
 
 	// Handle the interaction based on its type
 	switch (Interaction.Type)
 	{
-	case EItemInteractionType::Hovered:
+	case EStatefulInteraction::Hovered:
 		{
 			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
 			StoreViewModel->SetStatusMessage(FText::Format(
-				FText::FromString("Previewing item: {0}"), FText::FromString(ItemName)));
+				FText::FromString("Previewing item: {0} (from {1})"),
+				FText::FromString(ItemName), FText::FromString(SourceName)));
 			StoreViewModel->SetPreviewedItem(ItemVM);
 			break;
 		}
-	case EItemInteractionType::Unhovered:
+	case EStatefulInteraction::Unhovered:
 		{
 			StoreViewModel->SetStatusMessage(FText::GetEmpty());
 			StoreViewModel->SetPreviewedItem(StoreViewModel->GetSelectedItem());
 			break;
 		}
-	case EItemInteractionType::Clicked:
+	case EStatefulInteraction::Clicked:
 		{
 			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
-			StoreViewModel->SetStatusMessage(FText::Format(FText::FromString("Clicked on item: {0}"), FText::FromString(ItemName)));
+			StoreViewModel->SetStatusMessage(FText::Format(
+				FText::FromString("Clicked on item: {0} (from {1})"),
+				FText::FromString(ItemName), FText::FromString(SourceName)));
 			StoreViewModel->SetSelectedItem(ItemVM);
 			if (ItemVM->GetItemData().bIsOwned)
 			{
@@ -267,6 +289,70 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 	default:
 		break;
 	}
+
+	// Reset the interaction state after processing
+	ItemVM->SetInteraction(EStatefulInteraction::None, NAME_None);
+}
+
+void UStoreSubsystem::OnItemCategoryInteractionChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
+
+	UCategoryViewModel* CategoryVM = Cast<UCategoryViewModel>(Object);
+	if (!ensure(IsValid(CategoryVM)))
+	{
+		return;
+	}
+
+	const FInteractionState& Interaction = CategoryVM->GetInteraction();
+	if (!Interaction.IsValid())
+	{
+		return; // No valid interaction to process
+	}
+
+	const FString& SourceName = Interaction.Source.ToString();
+	const FString& CategoryTag = CategoryVM->GetCategoryTag().ToString();
+
+	// Handle the interaction based on its type
+	switch (Interaction.Type)
+	{
+	case EStatefulInteraction::None:
+		break;
+	case EStatefulInteraction::Hovered:
+		{
+			StoreViewModel->SetStatusMessage(FText::Format(
+				FText::FromString("Previewing category: {0} (from {1})"),
+				FText::FromString(CategoryTag), FText::FromString(SourceName)));
+		}
+		break;
+	case EStatefulInteraction::Unhovered:
+		{
+			StoreViewModel->SetStatusMessage(FText::GetEmpty());
+		}
+		break;
+	case EStatefulInteraction::Clicked:
+		TArray<TObjectPtr<UCategoryViewModel>> SelectedCategories = StoreViewModel->GetSelectedCategories();
+		if (SelectedCategories.Contains(CategoryVM))
+		{
+			SelectedCategories.Remove(CategoryVM);
+			StoreViewModel->SetStatusMessage(FText::Format(
+				FText::FromString("Unselected category: {0}, from {1}"),
+				FText::FromString(CategoryTag), FText::FromString(SourceName)));
+			StoreViewModel->SetSelectedCategories(SelectedCategories); // Update the ViewModel with the removed category
+		}
+		else
+		{
+			SelectedCategories.Add(CategoryVM);
+			StoreViewModel->SetStatusMessage(FText::Format(
+				FText::FromString("Selected category: {0}, from {1}"),
+				FText::FromString(CategoryTag), FText::FromString(SourceName)));
+			StoreViewModel->SetSelectedCategories(SelectedCategories); // Update the ViewModel with the added category
+		}
+		break;
+	}
+
+	// Reset the interaction state after processing
+	CategoryVM->SetInteraction(EStatefulInteraction::None, NAME_None);
 }
 
 /* Lazy Loading Functions */
@@ -289,7 +375,7 @@ void UStoreSubsystem::LazyLoadStoreItems()
 		}
 
 		StoreViewModel->SetAvailableItems(StoreItems);
-		FilterAvailableStoreItems(StoreViewModel->GetFilterText());
+		FilterAvailableStoreItems();
 		StoreViewModel->SetStatusMessage(Status);
 	};
 
@@ -429,13 +515,17 @@ void UStoreSubsystem::LazySellItem(const FTransactionRequest& TransactionRequest
 }
 
 /* Utility Functions */
-void UStoreSubsystem::FilterAvailableStoreItems(const FString& FilterText)
+void UStoreSubsystem::FilterAvailableStoreItems()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (CachedStoreItems.IsEmpty())
 	{
 		return;
 	}
+
+	const FString& FilterText = StoreViewModel->GetFilterText();
+	const TArray<TObjectPtr<UCategoryViewModel>> SelectedCategories = StoreViewModel->GetSelectedCategories();
+
 	TArray<TObjectPtr<UItemViewModel>> FilteredItems;
 	FilteredItems.Reserve(CachedStoreItems.Num());
 
@@ -445,11 +535,34 @@ void UStoreSubsystem::FilterAvailableStoreItems(const FString& FilterText)
 		{
 			continue; // Skip owned items in the available items list.
 		}
-		if (FilterText.IsEmpty() || ItemData.UIData.DisplayName.ToString().Contains(FilterText))
+
+		// Text filter pass
+		const bool bTextFilterMatch = FilterText.IsEmpty() || ItemData.UIData.DisplayName.ToString().Contains(FilterText);
+		if (!bTextFilterMatch)
 		{
-			UItemViewModel* ItemVM = GetOrCreateItemViewModel(ItemData);
-			FilteredItems.Add(ItemVM);
+			continue;
 		}
+
+		// Category filter pass
+		if (SelectedCategories.Num() > 0)
+		{
+			bool bCategoryMatch = false;
+			for (const TObjectPtr<UCategoryViewModel>& SelectedCategory : SelectedCategories)
+			{
+				if (ItemData.Categories.HasTag(SelectedCategory->GetCategoryTag()))
+				{
+					bCategoryMatch = true;
+					break;
+				}
+			}
+			if (!bCategoryMatch)
+			{
+				continue;
+			}
+		}
+
+		UItemViewModel* ItemVM = GetOrCreateItemViewModel(ItemData);
+		FilteredItems.Add(ItemVM);
 	}
 
 	StoreViewModel->SetAvailableItems(FilteredItems);
@@ -478,5 +591,25 @@ UItemViewModel* UStoreSubsystem::GetOrCreateItemViewModel(const FStoreItem& Item
 	// Add the new ViewModel to the cache for future reuse.
 	ItemViewModelCache.Add(ItemData.ItemId, NewItemVM);
 
+	// Set the category view models if needed.
+	TArray<TObjectPtr<UCategoryViewModel>> CategoryVMs;
+	for (const FGameplayTag& CategoryTag : ItemData.Categories)
+	{
+		UCategoryViewModel* CategoryVM = NewObject<UCategoryViewModel>(NewItemVM);
+		CategoryVM->SetCategoryTag(CategoryTag);
+
+		// TODO: Look up UI data mapped to the category tag in project settings
+		FStandardUIData CategoryUIData;
+		CategoryUIData.DisplayName = FText::FromString(CategoryTag.GetTagName().ToString());
+		CategoryUIData.Description = FText::FromString(FString::Printf(TEXT("Category: %s"), *CategoryTag.GetTagName().ToString()));
+		CategoryUIData.Icon = FSlateBrush();
+		CategoryVM->SetUIData(CategoryUIData);
+	
+		UE_MVVM_BIND_FIELD(CategoryVM, Interaction, OnItemCategoryInteractionChanged);
+		CategoryVMs.Add(CategoryVM);
+	}
+	NewItemVM->SetCategoryViewModels(CategoryVMs);
+
 	return NewItemVM;
 }
+

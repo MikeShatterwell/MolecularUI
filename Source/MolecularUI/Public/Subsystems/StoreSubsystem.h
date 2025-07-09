@@ -28,13 +28,16 @@ public:
 	// End IStoreViewModelProvider implementation.
 
 protected:
+	void RefreshStoreData();
+
 	// Reacts to changes in the ViewModel's properties.
 	void OnFilterTextChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
+	void OnSelectedCategoriesChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
 	void OnTransactionRequestChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
-	void RefreshStoreData();
 	void OnRefreshRequestedChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
 	void OnItemInteractionChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
-
+	void OnItemCategoryInteractionChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
+	
 	// Simulates sending and receiving data asynchronously.
 	void LazyLoadStoreItems();
 	void LazyLoadStoreCurrency();
@@ -42,8 +45,8 @@ protected:
 	void LazyPurchaseItem(const FTransactionRequest& PurchaseRequest);
 	void LazySellItem(const FTransactionRequest& TransactionRequest);
 
-	// Filters the cached store items based on the filter text.
-	void FilterAvailableStoreItems(const FString& FilterText);
+	// Filters the cached store items based on the filter text and selected categories.
+	void FilterAvailableStoreItems();
 
 	// The single, authoritative instance of the Store ViewModel.
 	UPROPERTY(Transient)
