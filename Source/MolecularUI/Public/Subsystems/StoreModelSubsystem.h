@@ -7,13 +7,15 @@
 #include "IStoreViewModelProvider.h"
 #include "MolecularTypes.h"
 #include "DataProviders/IStoreDataProvider.h"
-#include "StoreSubsystem.generated.h"
+#include "StoreModelSubsystem.generated.h"
 
+class UCategoryViewModel;
+class UMVVMViewModelBase;
 class UItemViewModel;
 class UStoreViewModel;
 
-UCLASS(Blueprintable, DisplayName = "Store Mock Data Subsystem")
-class UStoreSubsystem : public UGameInstanceSubsystem, public IStoreViewModelProvider
+UCLASS(Blueprintable, Abstract, DisplayName = "Store Mock Data Subsystem")
+class UStoreModelSubsystem : public UGameInstanceSubsystem, public IStoreViewModelProvider
 {
 	GENERATED_BODY()
 
@@ -28,16 +30,25 @@ public:
 	// End IStoreViewModelProvider implementation.
 
 protected:
-	void RefreshStoreData();
-
 	// Reacts to changes in the ViewModel's properties.
-	void OnFilterTextChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
-	void OnSelectedCategoriesChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
-	void OnTransactionRequestChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
-	void OnRefreshRequestedChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
-	void OnItemInteractionChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
-	void OnItemCategoryInteractionChanged(UObject* Object, UE::FieldNotification::FFieldId Field);
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model Subsystem | Stateful Communication")
+	void OnFilterTextChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field);
 	
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model Subsystem | Stateful Communication")
+	void OnSelectedCategoriesChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field);
+	
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model Subsystem | Stateful Communication")
+	void OnTransactionRequestChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field);
+	
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model Subsystem | Stateful Communication")
+	void OnRefreshRequestedChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field);
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model Subsystem | Stateful Communication")
+	void OnItemInteractionChanged(UItemViewModel* InItemVM, FFieldNotificationId Field);
+	
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model Subsystem | Stateful Communication")
+	void OnItemCategoryInteractionChanged(UCategoryViewModel* InCategoryVM, FFieldNotificationId Field);
+
 	// Simulates sending and receiving data asynchronously.
 	void LazyLoadStoreItems();
 	void LazyLoadStoreCurrency();
@@ -47,6 +58,9 @@ protected:
 
 	// Filters the cached store items based on the filter text and selected categories.
 	void FilterAvailableStoreItems();
+
+	// Lazy loads the store data from the provider.
+	void RefreshStoreData();
 
 	// The single, authoritative instance of the Store ViewModel.
 	UPROPERTY(Transient)
@@ -59,10 +73,6 @@ protected:
 	// Cached list of store items used for filtering without repeated backend calls.
 	UPROPERTY(Transient)
 	TArray<FStoreItem> CachedStoreItems;
-
-	// Instance of the provider created from DataProviderClass.
-	UPROPERTY(Transient)
-	TObjectPtr<UObject> StoreDataProviderObject = nullptr;
 
 	// Cached interface pointer to the provider instance.
 	TScriptInterface<IStoreDataProvider> StoreDataProviderInterface;

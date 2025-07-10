@@ -8,19 +8,9 @@ const UMolecularUISettings* UMolecularUISettings::Get()
 	return GetDefault<UMolecularUISettings>();
 }
 
-TSubclassOf<UObject> UMolecularUISettings::GetDefaultStoreDataProviderClass()
-{
-	return Get()->DefaultStoreDataProviderClass;
-}
-
 TSoftObjectPtr<UDataTable> UMolecularUISettings::GetDefaultStoreItemsDataTable()
 {
-	return Get()->DefaultStoreItemsDataTable;
-}
-
-TSoftObjectPtr<UDataTable> UMolecularUISettings::GetDefaultOwnedItemsDataTable()
-{
-	return Get()->DefaultOwnedItemsDataTable;
+	return Get()->DefaultItemsDataTable;
 }
 
 const FSlateBrush& UMolecularUISettings::GetDefaultStoreIcon()

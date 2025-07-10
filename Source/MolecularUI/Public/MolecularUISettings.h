@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include <Engine/DeveloperSettings.h>
 
-#include "DataProviders/MockStoreDataProvider.h"
+#include "DataProviders/MockStoreDataProviderSubsystem.h"
 #include "MolecularUISettings.generated.h"
 
 /**
@@ -20,25 +20,13 @@ public:
 	static const UMolecularUISettings* Get();
 
 	UFUNCTION(BlueprintPure, Category = "MolecularUI Settings")
-	static TSubclassOf<UObject> GetDefaultStoreDataProviderClass();
-
-	UFUNCTION(BlueprintPure, Category = "MolecularUI Settings")
 	static TSoftObjectPtr<UDataTable> GetDefaultStoreItemsDataTable();
-
-	UFUNCTION(BlueprintPure, Category = "MolecularUI Settings")
-	static TSoftObjectPtr<UDataTable> GetDefaultOwnedItemsDataTable();
 
 	UFUNCTION(BlueprintPure, Category = "MolecularUI Settings")
 	static const FSlateBrush& GetDefaultStoreIcon();
 protected:
-	UPROPERTY(EditAnywhere, Config, Category = "MolecularUI", meta = (MustImplement = "IStoreViewModelProvider"))
-	TSubclassOf<UObject> DefaultStoreDataProviderClass = UMockStoreDataProvider::StaticClass();
-
 	UPROPERTY(EditAnywhere, Config, Category = "MolecularUI")
-	TSoftObjectPtr<UDataTable> DefaultStoreItemsDataTable = nullptr;
-
-	UPROPERTY(EditAnywhere, Config, Category = "MolecularUI")
-	TSoftObjectPtr<UDataTable> DefaultOwnedItemsDataTable = nullptr;
+	TSoftObjectPtr<UDataTable> DefaultItemsDataTable = nullptr;
 	
 	UPROPERTY(EditAnywhere, Config, Category = "MolecularUI")
 	FSlateBrush DefaultStoreIcon = FSlateBrush();

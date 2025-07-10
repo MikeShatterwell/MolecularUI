@@ -1,16 +1,15 @@
 ﻿// Copyright Mike Desrosiers, All Rights Reserved.
 
-#include "Subsystems/StoreSubsystem.h"
+#include "Subsystems/StoreModelSubsystem.h"
 
 #include <TimerManager.h>
 
-#include "MolecularUISettings.h"
 #include "ViewModels/StoreViewModel.h"
 #include "ViewModels/ItemViewModel.h"
 #include "Utils/MolecularMacros.h"
 #include "MolecularUITags.h"
 #include "Utils/LogMolecularUI.h"
-#include "DataProviders/MockStoreDataProvider.h"
+#include "DataProviders/MockStoreDataProviderSubsystem.h"
 #include "ViewModels/CategoryViewModel.h"
 
 namespace UStoreSubsystem_private
@@ -47,43 +46,33 @@ namespace UStoreSubsystem_private
 		TSharedRef<UStoreSubsystem_private::FScopedStoreState> VarName = MakeShared<UStoreSubsystem_private::FScopedStoreState>(ViewModelPtr, StateTag)
 }
 
-void UStoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+void UStoreModelSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	Super::Initialize(Collection);
 
+	// Use a different class when not using the mock data provider.
+	// This example doesn't have a "real" data provider.
+	UGameInstanceSubsystem* StoreDataProviderSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UMockStoreDataProviderSubsystem>();
+
+	if (IsValid(StoreDataProviderSubsystem)
+		&& StoreDataProviderSubsystem->GetClass()->ImplementsInterface(UStoreDataProvider::StaticClass()))
+	{
+		StoreDataProviderInterface.SetObject(StoreDataProviderSubsystem);
+		StoreDataProviderInterface.SetInterface(Cast<IStoreDataProvider>(StoreDataProviderSubsystem));
+	}
+
 	StoreViewModel = NewObject<UStoreViewModel>(this);
-
-	// Spawn the provider from the configurable class. By default this will
-	// create the mock implementation but it can be replaced with any class
-	// that implements IStoreDataProvider.
-	if (const TSubclassOf<UObject> DataProviderClass = UMolecularUISettings::GetDefaultStoreDataProviderClass())
-	{
-		StoreDataProviderObject = NewObject<UObject>(this, DataProviderClass);
-	}
-
-	if (IsValid(StoreDataProviderObject) && StoreDataProviderObject->GetClass()->ImplementsInterface(UStoreDataProvider::StaticClass()))
-	{
-		StoreDataProviderInterface.SetObject(StoreDataProviderObject);
-		StoreDataProviderInterface.SetInterface(Cast<IStoreDataProvider>(StoreDataProviderObject));
-
-		// Initialize mock provider with our world for timer usage.
-		if (UMockStoreDataProvider* MockProvider = Cast<UMockStoreDataProvider>(StoreDataProviderObject))
-		{
-			MockProvider->InitializeProvider(this);
-		}
-	}
-
 	// Start in a "None" state so initial loads can be triggered on first access.
 	StoreViewModel->AddStoreState(MolecularUITags::Store::State::None);
 
-	UE_MVVM_BIND_FIELD(StoreViewModel, FilterText, OnFilterTextChanged);
-	UE_MVVM_BIND_FIELD(StoreViewModel, SelectedCategories, OnSelectedCategoriesChanged);
-	UE_MVVM_BIND_FIELD(StoreViewModel, TransactionRequest, OnTransactionRequestChanged);
-	UE_MVVM_BIND_FIELD(StoreViewModel, bRefreshRequested, OnRefreshRequestedChanged);
+	UE_MVVM_BIND_FIELD(UStoreViewModel, StoreViewModel, FilterText, OnFilterTextChanged);
+	UE_MVVM_BIND_FIELD(UStoreViewModel, StoreViewModel, SelectedCategories, OnSelectedCategoriesChanged);
+	UE_MVVM_BIND_FIELD(UStoreViewModel, StoreViewModel, TransactionRequest, OnTransactionRequestChanged);
+	UE_MVVM_BIND_FIELD(UStoreViewModel, StoreViewModel, bRefreshRequested, OnRefreshRequestedChanged);
 }
 
-void UStoreSubsystem::Deinitialize()
+void UStoreModelSubsystem::Deinitialize()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
@@ -118,14 +107,13 @@ void UStoreSubsystem::Deinitialize()
 
 	ItemViewModelCache.Empty();
 	CachedStoreItems.Empty();
-	
-	StoreDataProviderObject = nullptr;
+
 	StoreDataProviderInterface = nullptr;
 
 	Super::Deinitialize();
 }
 
-UStoreViewModel* UStoreSubsystem::GetStoreViewModel_Implementation()
+UStoreViewModel* UStoreModelSubsystem::GetStoreViewModel_Implementation()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (!IsValid(StoreViewModel))
@@ -146,22 +134,22 @@ UStoreViewModel* UStoreSubsystem::GetStoreViewModel_Implementation()
 }
 
 /* Field Notification Handlers */
-void UStoreSubsystem::OnFilterTextChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
+void UStoreModelSubsystem::OnFilterTextChanged_Implementation(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	FilterAvailableStoreItems();
 }
 
-void UStoreSubsystem::OnSelectedCategoriesChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
+void UStoreModelSubsystem::OnSelectedCategoriesChanged_Implementation(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	FilterAvailableStoreItems();
 }
 
-void UStoreSubsystem::OnTransactionRequestChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
+void UStoreModelSubsystem::OnTransactionRequestChanged_Implementation(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
-	const FTransactionRequest& TransactionRequest = StoreViewModel->GetTransactionRequest();
+	const FTransactionRequest& TransactionRequest = InStoreViewModel->GetTransactionRequest();
 
 	// Only process valid requests.
 	// When the request is processed and cleared, this will be called again with an empty request,
@@ -172,18 +160,18 @@ void UStoreSubsystem::OnTransactionRequestChanged(UObject* Object, UE::FieldNoti
 	}
 
 	// If the store isn't ready, queue or reset the request and exit early.
-	if (!StoreViewModel->HasStoreState(MolecularUITags::Store::State::Ready))
+	if (!InStoreViewModel->HasStoreState(MolecularUITags::Store::State::Ready))
 	{
 		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Store not ready. Failing transaction request for %s"), __FUNCTION__,
 			   *TransactionRequest.ToString());
 
-		StoreViewModel->SetTransactionRequest(FTransactionRequest());
-		StoreViewModel->SetErrorMessage(FText::FromString("Store not ready. Please try again later."));
-		StoreViewModel->AddStoreState(MolecularUITags::Store::State::Error);
+		InStoreViewModel->SetTransactionRequest(FTransactionRequest());
+		InStoreViewModel->SetErrorMessage(FText::FromString("Store not ready. Please try again later."));
+		InStoreViewModel->AddStoreState(MolecularUITags::Store::State::Error);
 		return;
 	}
 
-	switch (StoreViewModel->GetTransactionType())
+	switch (InStoreViewModel->GetTransactionType())
 	{
 	case ETransactionType::None:
 		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] No transaction type set for request: %s"), __FUNCTION__,
@@ -198,27 +186,12 @@ void UStoreSubsystem::OnTransactionRequestChanged(UObject* Object, UE::FieldNoti
 	}
 }
 
-void UStoreSubsystem::RefreshStoreData()
-{
-	// Clear any existing error message
-	StoreViewModel->SetErrorMessage(FText::GetEmpty());
-	StoreViewModel->RemoveStoreState(MolecularUITags::Store::State::Error);
-
-	// Refresh the store data
-	LazyLoadStoreItems();
-	LazyLoadOwnedItems();
-	LazyLoadStoreCurrency();
-
-	StoreViewModel->SetPreviewedItem(nullptr);
-	StoreViewModel->SetSelectedItem(nullptr);
-}
-
-void UStoreSubsystem::OnRefreshRequestedChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
+void UStoreModelSubsystem::OnRefreshRequestedChanged_Implementation(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
-	if (StoreViewModel->GetRefreshRequested())
+	if (InStoreViewModel->GetRefreshRequested())
 	{
-		StoreViewModel->SetRefreshRequested(false); // Reset the flag
+		InStoreViewModel->SetRefreshRequested(false); // Reset the flag
 
 		RefreshStoreData();
 		
@@ -226,16 +199,15 @@ void UStoreSubsystem::OnRefreshRequestedChanged(UObject* Object, UE::FieldNotifi
 	}
 }
 
-void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
+void UStoreModelSubsystem::OnItemInteractionChanged_Implementation(UItemViewModel* InItemVM, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
-	UItemViewModel* ItemVM = Cast<UItemViewModel>(Object);
-	if (!ensure(IsValid(ItemVM)))
+	if (!ensure(IsValid(InItemVM)))
 	{
 		return;
 	}
 
-	const FInteractionState& Interaction = ItemVM->GetInteraction();
+	const FInteractionState& Interaction = InItemVM->GetInteraction();
 	if (!Interaction.IsValid())
 	{
 		return; // No valid interaction to process
@@ -248,11 +220,11 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 	{
 	case EStatefulInteraction::Hovered:
 		{
-			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
+			const FString& ItemName = InItemVM->GetItemData().UIData.DisplayName.ToString();
 			StoreViewModel->SetStatusMessage(FText::Format(
 				FText::FromString("Previewing item: {0} (from {1})"),
 				FText::FromString(ItemName), FText::FromString(SourceName)));
-			StoreViewModel->SetPreviewedItem(ItemVM);
+			StoreViewModel->SetPreviewedItem(InItemVM);
 			break;
 		}
 	case EStatefulInteraction::Unhovered:
@@ -263,17 +235,17 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 		}
 	case EStatefulInteraction::Clicked:
 		{
-			const FString& ItemName = ItemVM->GetItemData().UIData.DisplayName.ToString();
+			const FString& ItemName = InItemVM->GetItemData().UIData.DisplayName.ToString();
 			StoreViewModel->SetStatusMessage(FText::Format(
 				FText::FromString("Clicked on item: {0} (from {1})"),
 				FText::FromString(ItemName), FText::FromString(SourceName)));
-			StoreViewModel->SetSelectedItem(ItemVM);
-			if (ItemVM->GetItemData().bIsOwned)
+			StoreViewModel->SetSelectedItem(InItemVM);
+			if (InItemVM->GetItemData().bIsOwned)
 			{
 				// Passes the "client-side" check that the item can be sold.
 				StoreViewModel->SetTransactionType(ETransactionType::Sell);
 			}
-			else if (ItemVM->GetItemData().Cost <= StoreViewModel->GetPlayerCurrency())
+			else if (InItemVM->GetItemData().Cost <= StoreViewModel->GetPlayerCurrency())
 			{
 				// Passes the "client-side" check that the item can be purchased.
 				StoreViewModel->SetTransactionType(ETransactionType::Purchase);
@@ -291,27 +263,25 @@ void UStoreSubsystem::OnItemInteractionChanged(UObject* Object, UE::FieldNotific
 	}
 
 	// Reset the interaction state after processing
-	ItemVM->SetInteraction(EStatefulInteraction::None, NAME_None);
+	InItemVM->SetInteraction(EStatefulInteraction::None, NAME_None);
 }
 
-void UStoreSubsystem::OnItemCategoryInteractionChanged(UObject* Object, UE::FieldNotification::FFieldId Field)
+void UStoreModelSubsystem::OnItemCategoryInteractionChanged_Implementation(UCategoryViewModel* InCategoryVM, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
-
-	UCategoryViewModel* CategoryVM = Cast<UCategoryViewModel>(Object);
-	if (!ensure(IsValid(CategoryVM)))
+	if (!ensure(IsValid(InCategoryVM)))
 	{
 		return;
 	}
 
-	const FInteractionState& Interaction = CategoryVM->GetInteraction();
+	const FInteractionState& Interaction = InCategoryVM->GetInteraction();
 	if (!Interaction.IsValid())
 	{
 		return; // No valid interaction to process
 	}
 
 	const FString& SourceName = Interaction.Source.ToString();
-	const FString& CategoryTag = CategoryVM->GetCategoryTag().ToString();
+	const FString& CategoryTag = InCategoryVM->GetCategoryTag().ToString();
 
 	// Handle the interaction based on its type
 	switch (Interaction.Type)
@@ -332,9 +302,9 @@ void UStoreSubsystem::OnItemCategoryInteractionChanged(UObject* Object, UE::Fiel
 		break;
 	case EStatefulInteraction::Clicked:
 		TArray<TObjectPtr<UCategoryViewModel>> SelectedCategories = StoreViewModel->GetSelectedCategories();
-		if (SelectedCategories.Contains(CategoryVM))
+		if (SelectedCategories.Contains(InCategoryVM))
 		{
-			SelectedCategories.Remove(CategoryVM);
+			SelectedCategories.Remove(InCategoryVM);
 			StoreViewModel->SetStatusMessage(FText::Format(
 				FText::FromString("Unselected category: {0}, from {1}"),
 				FText::FromString(CategoryTag), FText::FromString(SourceName)));
@@ -342,7 +312,7 @@ void UStoreSubsystem::OnItemCategoryInteractionChanged(UObject* Object, UE::Fiel
 		}
 		else
 		{
-			SelectedCategories.Add(CategoryVM);
+			SelectedCategories.Add(InCategoryVM);
 			StoreViewModel->SetStatusMessage(FText::Format(
 				FText::FromString("Selected category: {0}, from {1}"),
 				FText::FromString(CategoryTag), FText::FromString(SourceName)));
@@ -352,11 +322,11 @@ void UStoreSubsystem::OnItemCategoryInteractionChanged(UObject* Object, UE::Fiel
 	}
 
 	// Reset the interaction state after processing
-	CategoryVM->SetInteraction(EStatefulInteraction::None, NAME_None);
+	InCategoryVM->SetInteraction(EStatefulInteraction::None, NAME_None);
 }
 
 /* Lazy Loading Functions */
-void UStoreSubsystem::LazyLoadStoreItems()
+void UStoreModelSubsystem::LazyLoadStoreItems()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::State::Loading::Items);
@@ -393,7 +363,7 @@ void UStoreSubsystem::LazyLoadStoreItems()
 	}
 }
 
-void UStoreSubsystem::LazyLoadOwnedItems()
+void UStoreModelSubsystem::LazyLoadOwnedItems()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::State::Loading::OwnedItems);
@@ -428,7 +398,7 @@ void UStoreSubsystem::LazyLoadOwnedItems()
 	}
 }
 
-void UStoreSubsystem::LazyLoadStoreCurrency()
+void UStoreModelSubsystem::LazyLoadStoreCurrency()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::State::Loading::Currency);
@@ -455,7 +425,7 @@ void UStoreSubsystem::LazyLoadStoreCurrency()
 	}
 }
 
-void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseRequest)
+void UStoreModelSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseRequest)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(PurchaseScope, StoreViewModel, MolecularUITags::Store::State::Purchasing);
@@ -485,7 +455,7 @@ void UStoreSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseReques
 	}
 }
 
-void UStoreSubsystem::LazySellItem(const FTransactionRequest& TransactionRequest)
+void UStoreModelSubsystem::LazySellItem(const FTransactionRequest& TransactionRequest)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(SellScope, StoreViewModel, MolecularUITags::Store::State::Selling);
@@ -515,7 +485,7 @@ void UStoreSubsystem::LazySellItem(const FTransactionRequest& TransactionRequest
 }
 
 /* Utility Functions */
-void UStoreSubsystem::FilterAvailableStoreItems()
+void UStoreModelSubsystem::FilterAvailableStoreItems()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (CachedStoreItems.IsEmpty())
@@ -568,7 +538,7 @@ void UStoreSubsystem::FilterAvailableStoreItems()
 	StoreViewModel->SetAvailableItems(FilteredItems);
 }
 
-UItemViewModel* UStoreSubsystem::GetOrCreateItemViewModel(const FStoreItem& ItemData)
+UItemViewModel* UStoreModelSubsystem::GetOrCreateItemViewModel(const FStoreItem& ItemData)
 {
 	// Check if the ViewModel already exists in the cache and is valid.
 	if (TObjectPtr<UItemViewModel>* FoundViewModel = ItemViewModelCache.Find(ItemData.ItemId))
@@ -586,7 +556,7 @@ UItemViewModel* UStoreSubsystem::GetOrCreateItemViewModel(const FStoreItem& Item
 	NewItemVM->SetItemData(ItemData);
 
 	// Bind the interaction FieldNotify to the ViewModel's OnItemInteractionChanged handler.
-	UE_MVVM_BIND_FIELD(NewItemVM, Interaction, OnItemInteractionChanged);
+	UE_MVVM_BIND_FIELD(UItemViewModel, NewItemVM, Interaction, OnItemInteractionChanged);
 
 	// Add the new ViewModel to the cache for future reuse.
 	ItemViewModelCache.Add(ItemData.ItemId, NewItemVM);
@@ -605,7 +575,7 @@ UItemViewModel* UStoreSubsystem::GetOrCreateItemViewModel(const FStoreItem& Item
 		CategoryUIData.Icon = FSlateBrush();
 		CategoryVM->SetUIData(CategoryUIData);
 	
-		UE_MVVM_BIND_FIELD(CategoryVM, Interaction, OnItemCategoryInteractionChanged);
+		UE_MVVM_BIND_FIELD(UCategoryViewModel, CategoryVM, Interaction, OnItemCategoryInteractionChanged);
 		CategoryVMs.Add(CategoryVM);
 	}
 	NewItemVM->SetCategoryViewModels(CategoryVMs);
@@ -613,3 +583,17 @@ UItemViewModel* UStoreSubsystem::GetOrCreateItemViewModel(const FStoreItem& Item
 	return NewItemVM;
 }
 
+void UStoreModelSubsystem::RefreshStoreData()
+{
+	// Clear any existing error message
+	StoreViewModel->SetErrorMessage(FText::GetEmpty());
+	StoreViewModel->RemoveStoreState(MolecularUITags::Store::State::Error);
+
+	// Refresh the store data
+	LazyLoadStoreItems();
+	LazyLoadOwnedItems();
+	LazyLoadStoreCurrency();
+
+	StoreViewModel->SetPreviewedItem(nullptr);
+	StoreViewModel->SetSelectedItem(nullptr);
+}

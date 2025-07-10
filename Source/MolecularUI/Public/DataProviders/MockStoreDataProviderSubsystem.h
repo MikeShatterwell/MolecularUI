@@ -3,20 +3,18 @@
 #pragma once
 
 #include "DataProviders/IStoreDataProvider.h"
-#include "MockStoreDataProvider.generated.h"
+#include "MockStoreDataProviderSubsystem.generated.h"
 
 /*
  * The mock data provider simulates a store backend by generating dummy data
  * and simulating asynchronous operations with random delays and failure chances.
  */
 UCLASS()
-class UMockStoreDataProvider : public UObject, public IStoreDataProvider
+class UMockStoreDataProviderSubsystem : public UGameInstanceSubsystem, public IStoreDataProvider
 {
 	GENERATED_BODY()
 
 public:
-	void InitializeProvider(UObject* InOuter);
-
 	// Begin IStoreDataProvider implementation
 	virtual void FetchStoreItems(TFunction<void(const TArray<FStoreItem>&, const FText&)> OnSuccess,
 								 TFunction<void(const FText&)> OnFailure) override;
@@ -49,12 +47,6 @@ protected:
 	const TSoftObjectPtr<UDataTable>& DataTable,
 	TArray<FStoreItem>& TargetArray,
 	TFunction<void()> OnComplete) const;
-
-	// Begin UObject overrides
-	virtual UWorld* GetWorld() const override;
-	// End UObject overrides
-	
-	TWeakObjectPtr<UWorld> OuterWorld;
 
 	TArray<FStoreItem> BackendStoreItems;
 	TArray<FStoreItem> BackendOwnedStoreItems;

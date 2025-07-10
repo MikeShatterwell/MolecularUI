@@ -4,7 +4,7 @@
 
 #include <Blueprint/UserWidget.h>
 
-#include "Subsystems/StoreSubsystem.h"
+#include "Subsystems/StoreModelSubsystem.h"
 #include "ViewModels/StoreViewModel.h"
 
 UObject* UStoreViewModelResolver::CreateInstance(const UClass* ExpectedType, const UUserWidget* UserWidget,
@@ -19,7 +19,7 @@ UObject* UStoreViewModelResolver::CreateInstance(const UClass* ExpectedType, con
 			return nullptr;
 		}
 			
-		UStoreSubsystem* StoreSubsystem = GameInstance->GetSubsystem<UStoreSubsystem>();
+		UStoreModelSubsystem* StoreSubsystem = GameInstance->GetSubsystem<UStoreModelSubsystem>();
 		if (!ensure(IsValid(StoreSubsystem)) || !ensure(StoreSubsystem->Implements<UStoreViewModelProvider>()))
 		{
 			return nullptr;

@@ -6,70 +6,86 @@
 #include <Templates/RemoveReference.h>
 #include "Utils/MolecularCVars.h"
 
-#define UE_MVVM_BIND_FIELD(ViewModel, Property, Handler) \
-do \
-	/**
-	* Binds a member function of the current UObject to a ViewModel's Field-Notify property.
-	* Supports both raw pointers (UMyViewModel*) and TObjectPtr<UMyViewModel>.
-	* Includes compile-time checks for type safety.
-	*
-	* @param ViewModel      Pointer or TObjectPtr to the ViewModel instance.
-	* @param Property       The name of the property in the ViewModel's FFieldNotificationClassDescriptor.
-	* @param Handler        The name of the member function in the current class to bind. Must have signature: void(UObject*, UE::FieldNotification::FFieldId).
-	*/ \
-{ \
-	using ViewModelParamType = std::decay_t<decltype(ViewModel)>; \
-	static_assert(UE::MolecularMacros::Private::TIsObjectPointerLike<ViewModelParamType>::value, \
-		"UE_MVVM_BIND_FIELD: 'ViewModel' parameter must be a raw pointer (e.g., UMyViewModel*) or TObjectPtr."); \
-	\
-	using ViewModelClass = typename UE::MolecularMacros::Private::TGetPointerElementType<ViewModelParamType>::Type; \
-	using ListenerClass = ThisClass; \
-	\
-	static_assert(std::is_base_of_v<UMVVMViewModelBase, ViewModelClass>, \
-		"UE_MVVM_BIND_FIELD: 'ViewModel' must be a UClass derived from UMVVMViewModelBase."); \
-	static_assert(std::is_invocable_v<decltype(&ListenerClass::Handler), ListenerClass*, UObject*, UE::FieldNotification::FFieldId>, \
-		"UE_MVVM_BIND_FIELD: 'Handler' function signature must be 'void FunctionName(UObject* SourceObject, UE::FieldNotification::FFieldId FieldId)'."); \
-	\
-	if (ViewModel) \
+/**
+ * Binds a Blueprint-overridable UFUNCTION to a ViewModel's Field-Notify property.
+ * This macro automatically creates a lambda to adapt the delegate's FFieldId to the FName expected by the UFUNCTION.
+ *
+ * @param ExpectedType   The UObject-derived type for the handler's first parameter (e.g., UMyViewModel).
+ * @param ViewModel	  Pointer or TObjectPtr to the ViewModel instance (or UObject that implements INotifyFieldValueChanged).
+ * @param Property	   The name of the property in the ViewModel's FFieldNotificationClassDescriptor.
+ * @param Handler		The name of the UFUNCTION in the current class to bind.
+ */
+#define UE_MVVM_BIND_FIELD(ExpectedType, ViewModel, Property, Handler) \
+	do \
 	{ \
-		const UE::FieldNotification::FFieldId FieldId = ViewModelClass::FFieldNotificationClassDescriptor::Property; \
-		if (FieldId.IsValid()) \
+		using ViewModelParamType = std::decay_t<decltype(ViewModel)>; \
+		static_assert(UE::MolecularMacros::Private::TIsObjectPointerLike<ViewModelParamType>::value, \
+			"UE_MVVM_BIND_FIELD: 'ViewModel' parameter must be a raw pointer (e.g., UMyViewModel*) or TObjectPtr."); \
+		\
+		using ViewModelClass = typename UE::MolecularMacros::Private::TGetPointerElementType<ViewModelParamType>::Type; \
+		using ListenerClass = ThisClass; \
+		\
+		/* The ViewModel itself must be a UObject. */ \
+		static_assert(std::is_base_of_v<UObject, ViewModelClass>, \
+			"UE_MVVM_BIND_FIELD: 'ViewModel' must be a UClass derived from UObject."); \
+		\
+		/* The specified handler type must also be a UObject. */ \
+		static_assert(std::is_base_of_v<UObject, ExpectedType>, \
+			"UE_MVVM_BIND_FIELD: ExpectedType, must be a UObject-derived type (usually a UMVVMViewModelBase subclass or other UObject that implements INotifyFieldValueChanged)."); \
+		\
+		/* Verify that the handler function has the correct signature using the provided ExpectedType. */ \
+		static_assert(std::is_invocable_v<decltype(&ListenerClass::Handler), ListenerClass*, ExpectedType*, FFieldNotificationId>, \
+			"UE_MVVM_BIND_FIELD: 'Handler' UFUNCTION signature mismatch. " \
+			"Expected 'void FunctionName(ExpectedType* SourceObject, FFieldNotificationId Field)'."); \
+		\
+		if (ViewModel) \
 		{ \
-			ViewModel->AddFieldValueChangedDelegate(FieldId, \
-				INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(this, &ListenerClass::Handler)); \
+			/* Ensure the ViewModel has a valid FieldId for the specified property. */ \
+			const UE::FieldNotification::FFieldId FieldId = ViewModelClass::FFieldNotificationClassDescriptor::Property; \
+			if (FieldId.IsValid()) \
+			{ \
+				/* Bind a weak lambda that adapts the parameters for the BP-exposed UFUNCTION. */ \
+				ViewModel->AddFieldValueChangedDelegate(FieldId, \
+					INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateWeakLambda(this, [this](UObject* InObject, UE::FieldNotification::FFieldId InField) \
+					{ \
+						/* Safely cast the source object to the expected type before invoking the handler. */ \
+						if (auto* SpecificObject = Cast<ExpectedType>(InObject)) \
+						{ \
+							this->Handler(SpecificObject, FFieldNotificationId(InField.GetName())); \
+						} \
+					})); \
+			} \
 		} \
-	} \
-} while(0)
+	} while(0)
 
 #define UE_MVVM_UNBIND_FIELD(ViewModel, Property) \
-do \
-	/**
-	* Unbinds the current object ('this') from a specific ViewModel property.
-	* The counterpart to UE_MVVM_BIND_FIELD.
-	*
-	* @param ViewModel	  Pointer or TObjectPtr to the ViewModel instance.
-	* @param Property	   The name of the property in the ViewModel's FFieldNotificationClassDescriptor.
-	*/ \
-{ \
-	using ViewModelParamType = std::decay_t<decltype(ViewModel)>; \
-	static_assert(UE::MolecularMacros::Private::TIsObjectPointerLike<ViewModelParamType>::value, \
-		"UE_MVVM_UNBIND_FIELD: 'ViewModel' parameter must be a raw pointer (e.g., UMyViewModel*) or TObjectPtr."); \
-	\
-	using ViewModelClass = typename UE::MolecularMacros::Private::TGetPointerElementType<ViewModelParamType>::Type; \
-	\
-	static_assert(std::is_base_of_v<UMVVMViewModelBase, ViewModelClass>, \
-		"UE_MVVM_UNBIND_FIELD: 'ViewModel' must be a UClass derived from UMVVMViewModelBase."); \
-	\
-	if (ViewModel) \
+	do \
+		/** \
+		 * Unbinds the current object ('this') from a specific ViewModel property. \
+		 * The counterpart to UE_MVVM_BIND_FIELD. \
+		 * \
+		 * @param ViewModel   Pointer or TObjectPtr to the ViewModel instance. \
+		 * @param Property	 The name of the property in the ViewModel's FFieldNotificationClassDescriptor. \
+		 */ \
 	{ \
-		const UE::FieldNotification::FFieldId FieldId = ViewModelClass::FFieldNotificationClassDescriptor::Property; \
-		if (FieldId.IsValid()) \
+		using ViewModelParamType = std::decay_t<decltype(ViewModel)>; \
+		static_assert(UE::MolecularMacros::Private::TIsObjectPointerLike<ViewModelParamType>::value, \
+			"UE_MVVM_UNBIND_FIELD: 'ViewModel' parameter must be a raw pointer (e.g., UMyViewModel*) or TObjectPtr."); \
+		\
+		using ViewModelClass = typename UE::MolecularMacros::Private::TGetPointerElementType<ViewModelParamType>::Type; \
+		\
+		static_assert(std::is_base_of_v<UMVVMViewModelBase, ViewModelClass>, \
+			"UE_MVVM_UNBIND_FIELD: 'ViewModel' must be a UClass derived from UMVVMViewModelBase."); \
+		\
+		if (ViewModel) \
 		{ \
-			ViewModel->RemoveAllFieldValueChangedDelegates(FieldId, this); \
+			const UE::FieldNotification::FFieldId FieldId = ViewModelClass::FFieldNotificationClassDescriptor::Property; \
+			if (FieldId.IsValid()) \
+			{ \
+				ViewModel->RemoveAllFieldValueChangedDelegates(FieldId, this); \
+			} \
 		} \
-	} \
-} while (0)
-
+	} while (0)
 
 #define FETCH_MOCK_DATA(TimerHandle, SuccessCallback, FailureCallback, ...) \
 do \

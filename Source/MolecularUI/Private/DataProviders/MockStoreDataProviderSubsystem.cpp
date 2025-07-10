@@ -1,6 +1,6 @@
 // Copyright Mike Desrosiers, All Rights Reserved.
 
-#include "DataProviders/MockStoreDataProvider.h"
+#include "DataProviders/MockStoreDataProviderSubsystem.h"
 #include "Utils/MolecularMacros.h"
 #include "Utils/MolecularCVars.h"
 #include "MolecularTypes.h"
@@ -12,12 +12,7 @@
 #include "MolecularUITags.h"
 #include "Utils/LogMolecularUI.h"
 
-void UMockStoreDataProvider::InitializeProvider(UObject* InOuter)
-{
-	OuterWorld = InOuter ? InOuter->GetWorld() : nullptr;
-}
-
-void UMockStoreDataProvider::FetchStoreItems(TFunction<void(const TArray<FStoreItem>&, const FText&)> OnSuccess,
+void UMockStoreDataProviderSubsystem::FetchStoreItems(TFunction<void(const TArray<FStoreItem>&, const FText&)> OnSuccess,
 											 TFunction<void(const FText&)> OnFailure)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
@@ -52,7 +47,7 @@ void UMockStoreDataProvider::FetchStoreItems(TFunction<void(const TArray<FStoreI
 					MolecularUI::CVars::Store::MaxDelay);
 }
 
-void UMockStoreDataProvider::FetchOwnedItems(TFunction<void(const TArray<FStoreItem>&, const FText&)> OnSuccess,
+void UMockStoreDataProviderSubsystem::FetchOwnedItems(TFunction<void(const TArray<FStoreItem>&, const FText&)> OnSuccess,
 											 TFunction<void(const FText&)> OnFailure)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
@@ -87,7 +82,7 @@ void UMockStoreDataProvider::FetchOwnedItems(TFunction<void(const TArray<FStoreI
 					MolecularUI::CVars::OwnedItems::MaxDelay);
 }
 
-void UMockStoreDataProvider::FetchPlayerCurrency(TFunction<void(int32, const FText&)> OnSuccess,
+void UMockStoreDataProviderSubsystem::FetchPlayerCurrency(TFunction<void(int32, const FText&)> OnSuccess,
 												 TFunction<void(const FText&)> OnFailure)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
@@ -114,7 +109,7 @@ void UMockStoreDataProvider::FetchPlayerCurrency(TFunction<void(int32, const FTe
 					MolecularUI::CVars::PlayerCurrency::MaxDelay);
 }
 
-void UMockStoreDataProvider::PurchaseItem(const FTransactionRequest& Request,
+void UMockStoreDataProviderSubsystem::PurchaseItem(const FTransactionRequest& Request,
 										  TFunction<void(const FText&)> OnSuccess,
 										  TFunction<void(const FText&)> OnFailure)
 {
@@ -161,7 +156,7 @@ void UMockStoreDataProvider::PurchaseItem(const FTransactionRequest& Request,
 					MolecularUI::CVars::Transaction::MaxDelay);
 }
 
-void UMockStoreDataProvider::SellItem(const FTransactionRequest& Request, TFunction<void(const FText&)> OnSuccess,
+void UMockStoreDataProviderSubsystem::SellItem(const FTransactionRequest& Request, TFunction<void(const FText&)> OnSuccess,
 									  TFunction<void(const FText&)> OnFailure)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
@@ -208,7 +203,7 @@ void UMockStoreDataProvider::SellItem(const FTransactionRequest& Request, TFunct
 					MolecularUI::CVars::Transaction::MaxDelay);
 }
 
-void UMockStoreDataProvider::LoadItemsFromDataTable(
+void UMockStoreDataProviderSubsystem::LoadItemsFromDataTable(
 	const TSoftObjectPtr<UDataTable>& DataTable,
 	TArray<FStoreItem>& TargetArray,
 	TFunction<void()> OnComplete) const
@@ -253,7 +248,7 @@ void UMockStoreDataProvider::LoadItemsFromDataTable(
 	(void)DataTable.LoadAsync(LoadDelegate);
 }
 
-void UMockStoreDataProvider::CreateDummyStoreData(TFunction<void()> OnComplete)
+void UMockStoreDataProviderSubsystem::CreateDummyStoreData(TFunction<void()> OnComplete)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
@@ -300,36 +295,31 @@ void UMockStoreDataProvider::CreateDummyStoreData(TFunction<void()> OnComplete)
 		OnDataTableLoaded);
 }
 
-void UMockStoreDataProvider::CreateDummyOwnedStoreData(TFunction<void()> OnComplete)
+void UMockStoreDataProviderSubsystem::CreateDummyOwnedStoreData(TFunction<void()> OnComplete)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
-	BackendOwnedStoreItems.Empty();
-
-	auto OnDataTableLoaded = [this, OnComplete]()
+	BackendOwnedStoreItems.Empty(BackendStoreItems.Num());
+	for (const FStoreItem& StoreItem : BackendStoreItems)
 	{
-		bDummyOwnedDataInitialized = true;
-		if (OnComplete)
+		if (StoreItem.bIsOwned)
 		{
-			OnComplete();
+			BackendOwnedStoreItems.Add(StoreItem);
 		}
-	};
+	}
 
-	LoadItemsFromDataTable(
-		UMolecularUISettings::GetDefaultOwnedItemsDataTable(),
-		BackendOwnedStoreItems,
-		OnDataTableLoaded);
+	bDummyOwnedDataInitialized = true;
+	if (OnComplete)
+	{
+		// No need for an async load here since we are just copying from the already loaded store items.
+		OnComplete();
+	}
 }
 
-void UMockStoreDataProvider::CreateDummyPlayerCurrency()
+void UMockStoreDataProviderSubsystem::CreateDummyPlayerCurrency()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
 	BackendPlayerCurrency = 500;
 	bDummyPlayerCurrencyInitialized = true;
-}
-
-UWorld* UMockStoreDataProvider::GetWorld() const
-{
-	return OuterWorld.Get();
 }
