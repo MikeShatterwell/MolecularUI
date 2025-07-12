@@ -14,13 +14,14 @@ class UMVVMViewModelBase;
 class UItemViewModel;
 class UStoreViewModel;
 
-UCLASS(Blueprintable, Abstract, DisplayName = "Store Mock Data Subsystem")
+UCLASS(DisplayName = "Store Model Subsystem")
 class UStoreModelSubsystem : public UGameInstanceSubsystem, public IStoreViewModelProvider
 {
 	GENERATED_BODY()
 
 public:
 	// Begin USubsystem interface.
+	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 	// End USubsystem interface.
@@ -31,22 +32,11 @@ public:
 
 protected:
 	// Reacts to changes in the ViewModel's properties.
-	UFUNCTION(BlueprintNativeEvent, Category = "Store Model Subsystem | Stateful Communication")
 	void OnFilterTextChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field);
-	
-	UFUNCTION(BlueprintNativeEvent, Category = "Store Model Subsystem | Stateful Communication")
 	void OnSelectedCategoriesChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field);
-	
-	UFUNCTION(BlueprintNativeEvent, Category = "Store Model Subsystem | Stateful Communication")
 	void OnTransactionRequestChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field);
-	
-	UFUNCTION(BlueprintNativeEvent, Category = "Store Model Subsystem | Stateful Communication")
 	void OnRefreshRequestedChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field);
-
-	UFUNCTION(BlueprintNativeEvent, Category = "Store Model Subsystem | Stateful Communication")
 	void OnItemInteractionChanged(UItemViewModel* InItemVM, FFieldNotificationId Field);
-	
-	UFUNCTION(BlueprintNativeEvent, Category = "Store Model Subsystem | Stateful Communication")
 	void OnItemCategoryInteractionChanged(UCategoryViewModel* InCategoryVM, FFieldNotificationId Field);
 
 	// Simulates sending and receiving data asynchronously.

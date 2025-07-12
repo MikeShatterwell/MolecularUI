@@ -46,6 +46,15 @@ namespace UStoreSubsystem_private
 		TSharedRef<UStoreSubsystem_private::FScopedStoreState> VarName = MakeShared<UStoreSubsystem_private::FScopedStoreState>(ViewModelPtr, StateTag)
 }
 
+bool UStoreModelSubsystem::ShouldCreateSubsystem(UObject* Outer) const
+{
+#if WITH_CLIENT_CODE
+	return ensure(Outer->GetWorld() && Outer->GetWorld()->IsGameWorld());
+#else
+	return false;
+#endif
+}
+
 void UStoreModelSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
@@ -134,19 +143,19 @@ UStoreViewModel* UStoreModelSubsystem::GetStoreViewModel_Implementation()
 }
 
 /* Field Notification Handlers */
-void UStoreModelSubsystem::OnFilterTextChanged_Implementation(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
+void UStoreModelSubsystem::OnFilterTextChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	FilterAvailableStoreItems();
 }
 
-void UStoreModelSubsystem::OnSelectedCategoriesChanged_Implementation(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
+void UStoreModelSubsystem::OnSelectedCategoriesChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	FilterAvailableStoreItems();
 }
 
-void UStoreModelSubsystem::OnTransactionRequestChanged_Implementation(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
+void UStoreModelSubsystem::OnTransactionRequestChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	const FTransactionRequest& TransactionRequest = InStoreViewModel->GetTransactionRequest();
@@ -186,7 +195,7 @@ void UStoreModelSubsystem::OnTransactionRequestChanged_Implementation(UStoreView
 	}
 }
 
-void UStoreModelSubsystem::OnRefreshRequestedChanged_Implementation(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
+void UStoreModelSubsystem::OnRefreshRequestedChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (InStoreViewModel->GetRefreshRequested())
@@ -199,7 +208,7 @@ void UStoreModelSubsystem::OnRefreshRequestedChanged_Implementation(UStoreViewMo
 	}
 }
 
-void UStoreModelSubsystem::OnItemInteractionChanged_Implementation(UItemViewModel* InItemVM, FFieldNotificationId Field)
+void UStoreModelSubsystem::OnItemInteractionChanged(UItemViewModel* InItemVM, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (!ensure(IsValid(InItemVM)))
@@ -266,7 +275,7 @@ void UStoreModelSubsystem::OnItemInteractionChanged_Implementation(UItemViewMode
 	InItemVM->SetInteraction(EStatefulInteraction::None, NAME_None);
 }
 
-void UStoreModelSubsystem::OnItemCategoryInteractionChanged_Implementation(UCategoryViewModel* InCategoryVM, FFieldNotificationId Field)
+void UStoreModelSubsystem::OnItemCategoryInteractionChanged(UCategoryViewModel* InCategoryVM, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (!ensure(IsValid(InCategoryVM)))
