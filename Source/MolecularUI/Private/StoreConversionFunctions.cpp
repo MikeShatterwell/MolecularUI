@@ -1,6 +1,6 @@
 ﻿// Copyright Mike Desrosiers, All Rights Reserved.
 
-#include "StoreConversionFunctions.h"
+#include "Utils/StoreConversionFunctions.h"
 #include "MolecularUITags.h"
 
 bool UStoreConversionFunctions::Conv_HasStoreState(const FGameplayTagContainer& CurrentStoreStates,

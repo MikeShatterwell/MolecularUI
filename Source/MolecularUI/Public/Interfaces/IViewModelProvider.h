@@ -5,21 +5,21 @@
 #include <CoreMinimal.h>
 #include <UObject/Interface.h>
 
-#include "IStoreViewModelProvider.generated.h"
+#include "IViewModelProvider.generated.h"
 
-class UStoreViewModel;
+class UMVVMViewModelBase;
 
 UINTERFACE(MinimalAPI, Blueprintable)
-class UStoreViewModelProvider : public UInterface
+class UViewModelProvider : public UInterface
 {
 	GENERATED_BODY()
 };
 
-class IStoreViewModelProvider
+class IViewModelProvider
 {
 	GENERATED_BODY()
 
 public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "MVVM")
-	UStoreViewModel* GetStoreViewModel();
+	UMVVMViewModelBase* GetViewModel(TSubclassOf<UMVVMViewModelBase> ViewModelClass);
 };

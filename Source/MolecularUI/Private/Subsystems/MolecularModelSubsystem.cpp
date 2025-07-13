@@ -12,6 +12,19 @@ bool UMolecularModelSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 			&& Outer->GetWorld()->IsGameWorld();
 }
 
+void UMolecularModelSubsystem::Deinitialize()
+{
+	for (auto& [ModelClass, ModelObject] : ModelInstances)
+	{
+		if (IsValid(ModelObject))
+		{
+			ModelObject->DeinitializeModel();
+		}
+	}
+	ModelInstances.Empty();
+	Super::Deinitialize();
+}
+
 UMolecularModelBase* UMolecularModelSubsystem::GetModel(const TSubclassOf<UMolecularModelBase> ModelClass)
 {
 	if (ModelClass == nullptr)
@@ -21,6 +34,7 @@ UMolecularModelBase* UMolecularModelSubsystem::GetModel(const TSubclassOf<UMolec
 
 	if (TObjectPtr<UMolecularModelBase>* FoundModel = ModelInstances.Find(ModelClass))
 	{
+		// Return already initialized model instance
 		return *FoundModel;
 	}
 

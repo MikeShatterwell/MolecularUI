@@ -4,9 +4,8 @@
 
 #include <Subsystems/GameInstanceSubsystem.h>
 
-#include "IStoreViewModelProvider.h"
+#include "Interfaces/IStoreDataProvider.h"
 #include "MolecularTypes.h"
-#include "DataProviders/IStoreDataProvider.h"
 #include "Models/MolecularModelBase.h"
 #include "StoreModel.generated.h"
 
@@ -16,19 +15,19 @@ class UItemViewModel;
 class UStoreViewModel;
 
 UCLASS(DisplayName = "Store Model Base")
-class UStoreModel : public UMolecularModelBase, public IStoreViewModelProvider
+class UStoreModel : public UMolecularModelBase
 {
 	GENERATED_BODY()
 
 public:
-	// Begin UMolecularModelBase interface.
+	// Begin UMolecularModelBase overrides.
 	virtual void InitializeModel_Implementation(UWorld* World) override;
 	virtual void DeinitializeModel_Implementation() override;
-	// End UMolecularModelBase interface.
+	// End UMolecularModelBase overrides.
 
-	// Begin IStoreViewModelProvider implementation.
-	virtual UStoreViewModel* GetStoreViewModel_Implementation() override;
-	// End IStoreViewModelProvider implementation.
+	// Begin IViewModelProvider override.
+	virtual UMVVMViewModelBase* GetViewModel_Implementation(TSubclassOf<UMVVMViewModelBase> ViewModelClass) override;
+	// End IViewModelProvider override.
 
 protected:
 	// Reacts to changes in the ViewModel's properties.

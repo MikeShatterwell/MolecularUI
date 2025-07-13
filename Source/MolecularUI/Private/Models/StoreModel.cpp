@@ -46,6 +46,7 @@ namespace UStoreSubsystem_private
 		TSharedRef<UStoreSubsystem_private::FScopedStoreState> VarName = MakeShared<UStoreSubsystem_private::FScopedStoreState>(ViewModelPtr, StateTag)
 }
 
+// Begin UMolecularModelBase interface.
 void UStoreModel::InitializeModel_Implementation(UWorld* World)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
@@ -112,8 +113,10 @@ void UStoreModel::DeinitializeModel_Implementation()
 
 	Super::DeinitializeModel_Implementation();
 }
+// End UMolecularModelBase interface.
 
-UStoreViewModel* UStoreModel::GetStoreViewModel_Implementation()
+// Begin IViewModelProvider implementation.
+UMVVMViewModelBase* UStoreModel::GetViewModel_Implementation(TSubclassOf<UMVVMViewModelBase> ViewModelClass)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (!IsValid(StoreViewModel))
@@ -132,6 +135,7 @@ UStoreViewModel* UStoreModel::GetStoreViewModel_Implementation()
 
 	return StoreViewModel;
 }
+// End IViewModelProvider implementation.
 
 /* Field Notification Handlers */
 void UStoreModel::OnFilterTextChanged_Implementation(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)

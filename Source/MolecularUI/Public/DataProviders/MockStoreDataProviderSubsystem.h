@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "DataProviders/IStoreDataProvider.h"
+#include "Interfaces/IStoreDataProvider.h"
 #include "MockStoreDataProviderSubsystem.generated.h"
 
 /*

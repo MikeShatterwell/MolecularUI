@@ -19,6 +19,7 @@ class MOLECULARUI_API UMolecularModelSubsystem : public UGameInstanceSubsystem
 public:
 	// Begin USubsystem interface.
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+	virtual void Deinitialize() override;
 	// End USubsystem interface.
 
 	UFUNCTION(BlueprintCallable, Category="ModelSubsystem")
