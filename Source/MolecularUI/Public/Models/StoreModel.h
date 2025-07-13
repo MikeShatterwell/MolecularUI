@@ -7,24 +7,24 @@
 #include "IStoreViewModelProvider.h"
 #include "MolecularTypes.h"
 #include "DataProviders/IStoreDataProvider.h"
-#include "StoreModelSubsystem.generated.h"
+#include "Models/MolecularModelBase.h"
+#include "StoreModel.generated.h"
 
 class UCategoryViewModel;
 class UMVVMViewModelBase;
 class UItemViewModel;
 class UStoreViewModel;
 
-UCLASS(DisplayName = "Store Model Subsystem")
-class UStoreModelSubsystem : public UGameInstanceSubsystem, public IStoreViewModelProvider
+UCLASS(DisplayName = "Store Model Base")
+class UStoreModel : public UMolecularModelBase, public IStoreViewModelProvider
 {
 	GENERATED_BODY()
 
 public:
-	// Begin USubsystem interface.
-	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-	virtual void Deinitialize() override;
-	// End USubsystem interface.
+	// Begin UMolecularModelBase interface.
+	virtual void InitializeModel_Implementation(UWorld* World) override;
+	virtual void DeinitializeModel_Implementation() override;
+	// End UMolecularModelBase interface.
 
 	// Begin IStoreViewModelProvider implementation.
 	virtual UStoreViewModel* GetStoreViewModel_Implementation() override;
@@ -32,28 +32,50 @@ public:
 
 protected:
 	// Reacts to changes in the ViewModel's properties.
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
 	void OnFilterTextChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field);
+	
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
 	void OnSelectedCategoriesChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field);
+	
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
 	void OnTransactionRequestChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field);
+	
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
 	void OnRefreshRequestedChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field);
+	
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
 	void OnItemInteractionChanged(UItemViewModel* InItemVM, FFieldNotificationId Field);
+	
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
 	void OnItemCategoryInteractionChanged(UCategoryViewModel* InCategoryVM, FFieldNotificationId Field);
 
 	// Simulates sending and receiving data asynchronously.
+	UFUNCTION(BlueprintCallable, Category = "Store Model")
 	void LazyLoadStoreItems();
+
+	UFUNCTION(BlueprintCallable, Category = "Store Model")
 	void LazyLoadStoreCurrency();
+
+	UFUNCTION(BlueprintCallable, Category = "Store Model")
 	void LazyLoadOwnedItems();
+
+	UFUNCTION(BlueprintCallable, Category = "Store Model")
 	void LazyPurchaseItem(const FTransactionRequest& PurchaseRequest);
+	
+	UFUNCTION(BlueprintCallable, Category = "Store Model")
 	void LazySellItem(const FTransactionRequest& TransactionRequest);
 
 	// Filters the cached store items based on the filter text and selected categories.
+	UFUNCTION(BlueprintCallable, Category = "Store Model")
 	void FilterAvailableStoreItems();
 
 	// Lazy loads the store data from the provider.
+	UFUNCTION(BlueprintCallable, Category = "Store Model")
 	void RefreshStoreData();
 
 	// The single, authoritative instance of the Store ViewModel.
-	UPROPERTY(Transient)
+	UPROPERTY(BlueprintReadWrite, Transient)
 	TObjectPtr<UStoreViewModel> StoreViewModel = nullptr;
 	
 	// Cache for item view models to reduce UObject churn.
@@ -61,7 +83,7 @@ protected:
 	TMap<FName, TObjectPtr<UItemViewModel>> ItemViewModelCache;
 
 	// Cached list of store items used for filtering without repeated backend calls.
-	UPROPERTY(Transient)
+	UPROPERTY(BlueprintReadWrite, Transient)
 	TArray<FStoreItem> CachedStoreItems;
 
 	// Cached interface pointer to the provider instance.

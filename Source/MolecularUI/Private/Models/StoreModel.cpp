@@ -1,6 +1,6 @@
 ﻿// Copyright Mike Desrosiers, All Rights Reserved.
 
-#include "Subsystems/StoreModelSubsystem.h"
+#include "Models/StoreModel.h"
 
 #include <TimerManager.h>
 
@@ -46,19 +46,10 @@ namespace UStoreSubsystem_private
 		TSharedRef<UStoreSubsystem_private::FScopedStoreState> VarName = MakeShared<UStoreSubsystem_private::FScopedStoreState>(ViewModelPtr, StateTag)
 }
 
-bool UStoreModelSubsystem::ShouldCreateSubsystem(UObject* Outer) const
-{
-#if WITH_CLIENT_CODE
-	return ensure(Outer->GetWorld() && Outer->GetWorld()->IsGameWorld());
-#else
-	return false;
-#endif
-}
-
-void UStoreModelSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+void UStoreModel::InitializeModel_Implementation(UWorld* World)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
-	Super::Initialize(Collection);
+	Super::InitializeModel_Implementation(World);
 
 	// Use a different class when not using the mock data provider.
 	// This example doesn't have a "real" data provider.
@@ -81,7 +72,7 @@ void UStoreModelSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	UE_MVVM_BIND_FIELD(UStoreViewModel, StoreViewModel, bRefreshRequested, OnRefreshRequestedChanged);
 }
 
-void UStoreModelSubsystem::Deinitialize()
+void UStoreModel::DeinitializeModel_Implementation()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
@@ -119,10 +110,10 @@ void UStoreModelSubsystem::Deinitialize()
 
 	StoreDataProviderInterface = nullptr;
 
-	Super::Deinitialize();
+	Super::DeinitializeModel_Implementation();
 }
 
-UStoreViewModel* UStoreModelSubsystem::GetStoreViewModel_Implementation()
+UStoreViewModel* UStoreModel::GetStoreViewModel_Implementation()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (!IsValid(StoreViewModel))
@@ -143,19 +134,19 @@ UStoreViewModel* UStoreModelSubsystem::GetStoreViewModel_Implementation()
 }
 
 /* Field Notification Handlers */
-void UStoreModelSubsystem::OnFilterTextChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
+void UStoreModel::OnFilterTextChanged_Implementation(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	FilterAvailableStoreItems();
 }
 
-void UStoreModelSubsystem::OnSelectedCategoriesChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
+void UStoreModel::OnSelectedCategoriesChanged_Implementation(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(__FUNCTION__);
 	FilterAvailableStoreItems();
 }
 
-void UStoreModelSubsystem::OnTransactionRequestChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
+void UStoreModel::OnTransactionRequestChanged_Implementation(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	const FTransactionRequest& TransactionRequest = InStoreViewModel->GetTransactionRequest();
@@ -195,7 +186,7 @@ void UStoreModelSubsystem::OnTransactionRequestChanged(UStoreViewModel* InStoreV
 	}
 }
 
-void UStoreModelSubsystem::OnRefreshRequestedChanged(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
+void UStoreModel::OnRefreshRequestedChanged_Implementation(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (InStoreViewModel->GetRefreshRequested())
@@ -208,7 +199,7 @@ void UStoreModelSubsystem::OnRefreshRequestedChanged(UStoreViewModel* InStoreVie
 	}
 }
 
-void UStoreModelSubsystem::OnItemInteractionChanged(UItemViewModel* InItemVM, FFieldNotificationId Field)
+void UStoreModel::OnItemInteractionChanged_Implementation(UItemViewModel* InItemVM, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (!ensure(IsValid(InItemVM)))
@@ -272,10 +263,10 @@ void UStoreModelSubsystem::OnItemInteractionChanged(UItemViewModel* InItemVM, FF
 	}
 
 	// Reset the interaction state after processing
-	InItemVM->SetInteraction(EStatefulInteraction::None, NAME_None);
+	InItemVM->ClearInteraction();
 }
 
-void UStoreModelSubsystem::OnItemCategoryInteractionChanged(UCategoryViewModel* InCategoryVM, FFieldNotificationId Field)
+void UStoreModel::OnItemCategoryInteractionChanged_Implementation(UCategoryViewModel* InCategoryVM, FFieldNotificationId Field)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (!ensure(IsValid(InCategoryVM)))
@@ -331,11 +322,11 @@ void UStoreModelSubsystem::OnItemCategoryInteractionChanged(UCategoryViewModel* 
 	}
 
 	// Reset the interaction state after processing
-	InCategoryVM->SetInteraction(EStatefulInteraction::None, NAME_None);
+	InCategoryVM->ClearInteraction();
 }
 
 /* Lazy Loading Functions */
-void UStoreModelSubsystem::LazyLoadStoreItems()
+void UStoreModel::LazyLoadStoreItems()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::State::Loading::Items);
@@ -372,7 +363,7 @@ void UStoreModelSubsystem::LazyLoadStoreItems()
 	}
 }
 
-void UStoreModelSubsystem::LazyLoadOwnedItems()
+void UStoreModel::LazyLoadOwnedItems()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::State::Loading::OwnedItems);
@@ -407,7 +398,7 @@ void UStoreModelSubsystem::LazyLoadOwnedItems()
 	}
 }
 
-void UStoreModelSubsystem::LazyLoadStoreCurrency()
+void UStoreModel::LazyLoadStoreCurrency()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::State::Loading::Currency);
@@ -434,7 +425,7 @@ void UStoreModelSubsystem::LazyLoadStoreCurrency()
 	}
 }
 
-void UStoreModelSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseRequest)
+void UStoreModel::LazyPurchaseItem(const FTransactionRequest& PurchaseRequest)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(PurchaseScope, StoreViewModel, MolecularUITags::Store::State::Purchasing);
@@ -464,7 +455,7 @@ void UStoreModelSubsystem::LazyPurchaseItem(const FTransactionRequest& PurchaseR
 	}
 }
 
-void UStoreModelSubsystem::LazySellItem(const FTransactionRequest& TransactionRequest)
+void UStoreModel::LazySellItem(const FTransactionRequest& TransactionRequest)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(SellScope, StoreViewModel, MolecularUITags::Store::State::Selling);
@@ -494,7 +485,7 @@ void UStoreModelSubsystem::LazySellItem(const FTransactionRequest& TransactionRe
 }
 
 /* Utility Functions */
-void UStoreModelSubsystem::FilterAvailableStoreItems()
+void UStoreModel::FilterAvailableStoreItems()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (CachedStoreItems.IsEmpty())
@@ -547,7 +538,7 @@ void UStoreModelSubsystem::FilterAvailableStoreItems()
 	StoreViewModel->SetAvailableItems(FilteredItems);
 }
 
-UItemViewModel* UStoreModelSubsystem::GetOrCreateItemViewModel(const FStoreItem& ItemData)
+UItemViewModel* UStoreModel::GetOrCreateItemViewModel(const FStoreItem& ItemData)
 {
 	// Check if the ViewModel already exists in the cache and is valid.
 	if (TObjectPtr<UItemViewModel>* FoundViewModel = ItemViewModelCache.Find(ItemData.ItemId))
@@ -586,13 +577,14 @@ UItemViewModel* UStoreModelSubsystem::GetOrCreateItemViewModel(const FStoreItem&
 	
 		UE_MVVM_BIND_FIELD(UCategoryViewModel, CategoryVM, Interaction, OnItemCategoryInteractionChanged);
 		CategoryVMs.Add(CategoryVM);
+		StoreViewModel->AddCategory(CategoryVM);
 	}
 	NewItemVM->SetCategoryViewModels(CategoryVMs);
 
 	return NewItemVM;
 }
 
-void UStoreModelSubsystem::RefreshStoreData()
+void UStoreModel::RefreshStoreData()
 {
 	// Clear any existing error message
 	StoreViewModel->SetErrorMessage(FText::GetEmpty());

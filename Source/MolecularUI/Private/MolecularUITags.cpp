@@ -31,5 +31,12 @@ namespace MolecularUITags
 			UE_DEFINE_GAMEPLAY_TAG(Other, "Items.Category.Other");
 		}
 	}
+	namespace InteractionSource
+	{
+		UE_DEFINE_GAMEPLAY_TAG(TabList, "InteractionSource.TabList");
+		UE_DEFINE_GAMEPLAY_TAG(DetailsPanel, "InteractionSource.DetailsPanel");
+		UE_DEFINE_GAMEPLAY_TAG(AvailableList, "InteractionSource.AvailableList");
+		UE_DEFINE_GAMEPLAY_TAG(OwnedList, "InteractionSource.OwnedList");
+	}
 }
 

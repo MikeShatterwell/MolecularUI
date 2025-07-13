@@ -5,6 +5,7 @@
 #include <CoreMinimal.h>
 #include <MVVMViewModelBase.h>
 
+#include "CategoryViewModel.h"
 #include "MolecularTypes.h"
 #include "MolecularUITags.h"
 
@@ -32,12 +33,28 @@ public:
 	void SetTransactionRequest(const FTransactionRequest& InRequest) { UE_MVVM_SET_PROPERTY_VALUE(TransactionRequest, InRequest); }
 	FTransactionRequest GetTransactionRequest() const { return TransactionRequest; }
 
-	void SetSelectedCategories(const TArray<TObjectPtr<UCategoryViewModel>>& InCategories)
-	{
-		UE_MVVM_SET_PROPERTY_VALUE(SelectedCategories, InCategories);
-	}
-
+	void SetSelectedCategories(const TArray<TObjectPtr<UCategoryViewModel>>& InCategories) { UE_MVVM_SET_PROPERTY_VALUE(SelectedCategories, InCategories); }
 	const TArray<TObjectPtr<UCategoryViewModel>>& GetSelectedCategories() const { return SelectedCategories; }
+
+	void AddCategory(UCategoryViewModel* InCategory)
+	{
+		TArray<TObjectPtr<UCategoryViewModel>> NewCategories = AllCategories;
+		if (!IsValid(InCategory))
+		{
+			return;
+		}
+		const TObjectPtr<UCategoryViewModel>* ExistingCategory =
+			Algo::FindByPredicate(NewCategories, [InCategory](const TObjectPtr<UCategoryViewModel>& Category)
+				{ return Category->GetCategoryTag() == InCategory->GetCategoryTag(); });
+		if (ExistingCategory)
+		{
+			return; // Category already exists, no need to add it again.
+		}
+		NewCategories.Add(InCategory);
+		SetAllCategories(NewCategories);
+	}
+	void SetAllCategories(const TArray<TObjectPtr<UCategoryViewModel>>& InCategories) { UE_MVVM_SET_PROPERTY_VALUE(AllCategories, InCategories); }
+	const TArray<TObjectPtr<UCategoryViewModel>>& GetAllCategories() const { return AllCategories; }
 
 	void SetTransactionType(const ETransactionType InType) { UE_MVVM_SET_PROPERTY_VALUE(TransactionType, InType); }
 	ETransactionType GetTransactionType() const { return TransactionType; }
@@ -131,6 +148,9 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	TArray<TObjectPtr<UCategoryViewModel>> SelectedCategories;
+	
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
+	TArray<TObjectPtr<UCategoryViewModel>> AllCategories;
 
 
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Category = "Transaction Request")

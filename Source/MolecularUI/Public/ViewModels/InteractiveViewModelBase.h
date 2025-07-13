@@ -6,6 +6,7 @@
 #include <MVVMViewModelBase.h>
 
 #include "MolecularTypes.h"
+#include "MolecularUITags.h"
 #include "InteractiveViewModelBase.generated.h"
 
 /**
@@ -18,7 +19,13 @@ class MOLECULARUI_API UInteractiveViewModelBase : public UMVVMViewModelBase
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Item ViewModel | Intent")
-	void SetInteraction(const EStatefulInteraction InType, const FName InSource = NAME_None)
+	void ClearInteraction()
+	{
+		const FInteractionState NewInteraction(EStatefulInteraction::None, FGameplayTag::EmptyTag);
+		UE_MVVM_SET_PROPERTY_VALUE(Interaction, NewInteraction);
+	}
+	UFUNCTION(BlueprintCallable, Category = "Item ViewModel | Intent")
+	void SetInteraction(const EStatefulInteraction InType, const FGameplayTag InSource)
 	{
 		const FInteractionState NewInteraction(InType, InSource);
 		UE_MVVM_SET_PROPERTY_VALUE(Interaction, NewInteraction);

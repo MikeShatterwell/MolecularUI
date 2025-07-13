@@ -35,5 +35,12 @@ namespace MolecularUITags
 			TAG(Other);
 		}
 	}
+	namespace InteractionSource
+	{
+		TAG(TabList);
+		TAG(DetailsPanel);
+		TAG(AvailableList);;
+		TAG(OwnedList);
+	}
 }
 

@@ -6,6 +6,7 @@
 #include <GameplayTagContainer.h>
 #include <Misc/DataValidation.h>
 
+#include "MolecularUITags.h"
 #include "MolecularTypes.generated.h"
 
 // Represents common data only the UI cares about.
@@ -151,16 +152,20 @@ struct FInteractionState
 {
 	GENERATED_BODY()
 
-	explicit FInteractionState(const EStatefulInteraction InType = EStatefulInteraction::None, const FName InSource = NAME_None)
+	explicit FInteractionState(const EStatefulInteraction InType = EStatefulInteraction::None, const FGameplayTag InSource = FGameplayTag::EmptyTag)
 		: Type(InType), Source(InSource) {}
 
 	/** The latest interaction that occurred. */
 	UPROPERTY(BlueprintReadWrite, Category = "Interaction")
 	EStatefulInteraction Type = EStatefulInteraction::None;
 
-	/* The source of the interaction (e.g., "FilterTab", "DetailsPanel") */
-	UPROPERTY(BlueprintReadWrite, Category = "Interaction")
-	FName Source = NAME_None; 
+	/*
+	 * The source of the interaction (e.g., "InteractionSource.TabList", "InteractionSource.DetailsPanel").
+	 * This is a tool to solve a problem in MVVM where the same ViewModel is used in multiple contexts and the source of the interaction is needed to differentiate them.
+	 * An empty tag means the interaction is not from a specific source, or the source is not relevant.
+	 */
+	UPROPERTY(BlueprintReadWrite, DisplayName = "Source", Category = "Interaction", Meta = (Categories = "MolecularUI.InteractionSource"))
+	FGameplayTag Source = FGameplayTag::EmptyTag;
 
 	bool operator==(const FInteractionState& Other) const
 	{
@@ -169,7 +174,7 @@ struct FInteractionState
 
 	bool IsValid() const
 	{
-		return Type != EStatefulInteraction::None && Source != NAME_None;
+		return Type != EStatefulInteraction::None;
 	}
 
 	FString ToString() const

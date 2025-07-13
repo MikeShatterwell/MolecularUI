@@ -6,8 +6,10 @@
 #include <Engine/DeveloperSettings.h>
 
 #include "DataProviders/MockStoreDataProviderSubsystem.h"
+#include "Models/StoreModel.h"
 #include "MolecularUISettings.generated.h"
 
+class UMolecularModelBase;
 /**
  * Static defaults for the MolecularUI plugin.
  */
