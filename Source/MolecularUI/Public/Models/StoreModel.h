@@ -50,27 +50,27 @@ protected:
 	void OnItemCategoryInteractionChanged(UCategoryViewModel* InCategoryVM, FFieldNotificationId Field);
 
 	// Simulates sending and receiving data asynchronously.
-	UFUNCTION(BlueprintCallable, Category = "Store Model")
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
 	void LazyLoadStoreItems();
 
-	UFUNCTION(BlueprintCallable, Category = "Store Model")
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
 	void LazyLoadStoreCurrency();
 
-	UFUNCTION(BlueprintCallable, Category = "Store Model")
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
 	void LazyLoadOwnedItems();
 
-	UFUNCTION(BlueprintCallable, Category = "Store Model")
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
 	void LazyPurchaseItem(const FTransactionRequest& PurchaseRequest);
 	
-	UFUNCTION(BlueprintCallable, Category = "Store Model")
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
 	void LazySellItem(const FTransactionRequest& TransactionRequest);
 
 	// Filters the cached store items based on the filter text and selected categories.
-	UFUNCTION(BlueprintCallable, Category = "Store Model")
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
 	void FilterAvailableStoreItems();
 
 	// Lazy loads the store data from the provider.
-	UFUNCTION(BlueprintCallable, Category = "Store Model")
+	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
 	void RefreshStoreData();
 
 	// The single, authoritative instance of the Store ViewModel.

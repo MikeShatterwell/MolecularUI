@@ -71,8 +71,13 @@ FText UStoreConversionFunctions::Conv_TransactionTypeToText(const ETransactionTy
 	}
 }
 
+FText UStoreConversionFunctions::Conv_InteractionStateToText(const FInteractionState& InteractionState)
+{
+	return FText::FromString(InteractionState.ToString());
+}
+
 ESlateVisibility UStoreConversionFunctions::Conv_ObjectIsValidToVisibility(const UObject* Object,
-	const ESlateVisibility ValidVisibility, const ESlateVisibility InvalidVisibility)
+                                                                           const ESlateVisibility ValidVisibility, const ESlateVisibility InvalidVisibility)
 {
 	return IsValid(Object) ? ValidVisibility : InvalidVisibility;
 }

@@ -330,7 +330,7 @@ void UStoreModel::OnItemCategoryInteractionChanged_Implementation(UCategoryViewM
 }
 
 /* Lazy Loading Functions */
-void UStoreModel::LazyLoadStoreItems()
+void UStoreModel::LazyLoadStoreItems_Implementation()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::State::Loading::Items);
@@ -367,7 +367,7 @@ void UStoreModel::LazyLoadStoreItems()
 	}
 }
 
-void UStoreModel::LazyLoadOwnedItems()
+void UStoreModel::LazyLoadOwnedItems_Implementation()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::State::Loading::OwnedItems);
@@ -402,7 +402,7 @@ void UStoreModel::LazyLoadOwnedItems()
 	}
 }
 
-void UStoreModel::LazyLoadStoreCurrency()
+void UStoreModel::LazyLoadStoreCurrency_Implementation()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(LoadingScope, StoreViewModel, MolecularUITags::Store::State::Loading::Currency);
@@ -429,7 +429,7 @@ void UStoreModel::LazyLoadStoreCurrency()
 	}
 }
 
-void UStoreModel::LazyPurchaseItem(const FTransactionRequest& PurchaseRequest)
+void UStoreModel::LazyPurchaseItem_Implementation(const FTransactionRequest& PurchaseRequest)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(PurchaseScope, StoreViewModel, MolecularUITags::Store::State::Purchasing);
@@ -459,7 +459,7 @@ void UStoreModel::LazyPurchaseItem(const FTransactionRequest& PurchaseRequest)
 	}
 }
 
-void UStoreModel::LazySellItem(const FTransactionRequest& TransactionRequest)
+void UStoreModel::LazySellItem_Implementation(const FTransactionRequest& TransactionRequest)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	SCOPED_STORE_STATE(SellScope, StoreViewModel, MolecularUITags::Store::State::Selling);
@@ -489,7 +489,7 @@ void UStoreModel::LazySellItem(const FTransactionRequest& TransactionRequest)
 }
 
 /* Utility Functions */
-void UStoreModel::FilterAvailableStoreItems()
+void UStoreModel::FilterAvailableStoreItems_Implementation()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	if (CachedStoreItems.IsEmpty())
@@ -542,6 +542,21 @@ void UStoreModel::FilterAvailableStoreItems()
 	StoreViewModel->SetAvailableItems(FilteredItems);
 }
 
+void UStoreModel::RefreshStoreData_Implementation()
+{
+	// Clear any existing error message
+	StoreViewModel->SetErrorMessage(FText::GetEmpty());
+	StoreViewModel->RemoveStoreState(MolecularUITags::Store::State::Error);
+
+	// Refresh the store data
+	LazyLoadStoreItems();
+	LazyLoadOwnedItems();
+	LazyLoadStoreCurrency();
+
+	StoreViewModel->SetPreviewedItem(nullptr);
+	StoreViewModel->SetSelectedItem(nullptr);
+}
+
 UItemViewModel* UStoreModel::GetOrCreateItemViewModel(const FStoreItem& ItemData)
 {
 	// Check if the ViewModel already exists in the cache and is valid.
@@ -566,6 +581,8 @@ UItemViewModel* UStoreModel::GetOrCreateItemViewModel(const FStoreItem& ItemData
 	ItemViewModelCache.Add(ItemData.ItemId, NewItemVM);
 
 	// Set the category view models if needed.
+	// This generates the category ViewModels that are associated with this item.
+	// They can be used to represent category tabs to filter items in the store or to show item details, or any other UI element that needs to display categories.
 	TArray<TObjectPtr<UCategoryViewModel>> CategoryVMs;
 	for (const FGameplayTag& CategoryTag : ItemData.Categories)
 	{
@@ -586,19 +603,4 @@ UItemViewModel* UStoreModel::GetOrCreateItemViewModel(const FStoreItem& ItemData
 	NewItemVM->SetCategoryViewModels(CategoryVMs);
 
 	return NewItemVM;
-}
-
-void UStoreModel::RefreshStoreData()
-{
-	// Clear any existing error message
-	StoreViewModel->SetErrorMessage(FText::GetEmpty());
-	StoreViewModel->RemoveStoreState(MolecularUITags::Store::State::Error);
-
-	// Refresh the store data
-	LazyLoadStoreItems();
-	LazyLoadOwnedItems();
-	LazyLoadStoreCurrency();
-
-	StoreViewModel->SetPreviewedItem(nullptr);
-	StoreViewModel->SetSelectedItem(nullptr);
 }
