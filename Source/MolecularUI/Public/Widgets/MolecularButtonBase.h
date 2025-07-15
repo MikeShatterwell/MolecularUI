@@ -26,4 +26,13 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Molecular UI", meta = (Categories = "InteractionSource"))
 	FGameplayTag InteractionSource = FGameplayTag::EmptyTag;
+
+	// When true, bypass the default CommonButtonBase selection behavior and instead allow the selection state to be handled by a ViewModel.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Molecular UI")
+	bool bUseStatefulInteraction = true;
+
+protected:
+	// Begin UCommonButtonBase overrides
+	virtual void HandleButtonClicked() override;
+	// End UCommonButtonBase overrides
 };

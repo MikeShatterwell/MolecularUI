@@ -85,13 +85,9 @@ void USelectionViewModel::PreviewViewModel(UMVVMViewModelBase* HoveredViewModel)
 	SetPreviewedViewModel(HoveredViewModel);
 }
 
-void USelectionViewModel::ClearPreview(UMVVMViewModelBase* UnhoveredViewModel)
+void USelectionViewModel::ClearPreview()
 {
-	// Only clear the preview if the unhovered item is the currently previewed one
-	if (PreviewedViewModel == UnhoveredViewModel)
-	{
-		SetPreviewedViewModel(nullptr);
-	}
+	SetPreviewedViewModel(nullptr);
 }
 
 void USelectionViewModel::ClearSelection()

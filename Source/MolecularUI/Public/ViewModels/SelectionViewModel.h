@@ -52,7 +52,7 @@ public:
 	void PreviewViewModel(UMVVMViewModelBase* HoveredViewModel);
 
 	UFUNCTION(BlueprintCallable, Category = "Selection ViewModel")
-	void ClearPreview(UMVVMViewModelBase* UnhoveredViewModel);
+	void ClearPreview();
 
 	UFUNCTION(BlueprintCallable, Category = "Selection ViewModel")
 	void ClearSelection();

@@ -11,9 +11,10 @@
 UObject* UGenericViewModelResolver::CreateInstance(const UClass* ExpectedType, const UUserWidget* UserWidget,
 												   const UMVVMView* View) const
 {
-	if (!IsValid(Model))
+	if (ModelClass == nullptr)
 	{
-		UE_LOG(LogMolecularUI, Error, TEXT("Invalid model for generic view model resolver"));
+		UE_LOG(LogMolecularUI, Error, TEXT("Invalid ModelClass for generic view model resolver looking for ViewModel %s"),
+			   *ViewModelName.ToString());
 		return nullptr;
 	}
 
@@ -38,24 +39,13 @@ UObject* UGenericViewModelResolver::CreateInstance(const UClass* ExpectedType, c
 		return nullptr;
 	}
 
-	UClass* ModelClass = Model->GetClass();
 	UMolecularModelBase* ModelInstance = ModelSubsystem->GetModel(ModelClass);
 	if (!IsValid(ModelInstance))
 	{
 		UE_LOG(LogMolecularUI, Error, TEXT("Failed to get model instance of type %s for generic view model resolver"),
-			   *Model->GetClass()->GetName());
+			   *ModelClass->GetName());
 		return nullptr;
 	}
-
-	// Copy editable properties from the template to the runtime instance.
-	for (TFieldIterator<FProperty> PropIt(ModelClass); PropIt; ++PropIt)
-	{
-		if (const FProperty* Prop = *PropIt; Prop->HasAnyPropertyFlags(CPF_Edit))
-		{
-			Prop->CopyCompleteValue_InContainer(ModelInstance, Model);
-		}
-	}
-	ModelInstance->InitializeModel(World);
 
 	// Check if the model implements the generic provider interface.
 	if (!ModelInstance->Implements<UViewModelProvider>())

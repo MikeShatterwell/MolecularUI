@@ -18,8 +18,8 @@ class MOLECULARUI_API UGenericViewModelResolver : public UMVVMViewModelContextRe
 
 	virtual UObject* CreateInstance(const UClass* ExpectedType, const UUserWidget* UserWidget, const UMVVMView* View) const override;
 public:
-	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Molecular UI")
-	TObjectPtr<UMolecularModelBase> Model = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Molecular UI")
+	TSubclassOf<UMolecularModelBase> ModelClass = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Molecular UI")
 	FName ViewModelName;

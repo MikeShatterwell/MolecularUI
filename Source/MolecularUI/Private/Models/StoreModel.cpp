@@ -85,24 +85,14 @@ void UStoreModel::InitializeModel_Implementation(UWorld* World)
 	// Initialize SelectionViewModels.
 	if (!IsValid(SelectionViewModel_Store))
 	{
-		FMVVMViewModelContext Context;
-		Context.ContextName = FName(TEXT("SelectionViewModel_Store"));
-		Context.ContextClass = USelectionViewModel::StaticClass();
-		
 		SelectionViewModel_Store = NewObject<USelectionViewModel>(this);
 		SelectionViewModel_Store->SetSelectionMode(StoreSelectionMode);
-		Collection->AddViewModelInstance(Context, SelectionViewModel_Store);
 	}
 
 	if (!IsValid(SelectionViewModel_Store_Tabs))
 	{
-		// Get the SelectionViewModel_Store_Tabs from the global collection.
-		FMVVMViewModelContext Context;
-		Context.ContextName = FName(TEXT("StoreViewModel_Store_Tabs"));
-		Context.ContextClass = USelectionViewModel::StaticClass();
 		SelectionViewModel_Store_Tabs = NewObject<USelectionViewModel>(this);
 		SelectionViewModel_Store_Tabs->SetSelectionMode(StoreSelectionMode);
-		Collection->AddViewModelInstance(Context, SelectionViewModel_Store_Tabs);
 	}
 
 	// Add default category tabs for the available items list.
@@ -225,12 +215,12 @@ void UStoreModel::OnTransactionRequestChanged_Implementation(UStoreViewModel* In
 	// Only process valid requests.
 	// When the request is processed and cleared, this will be called again with an empty request,
 	// so we can safely ignore that case.
-	if (!TransactionRequest.IsValid())
+	if (!TransactionRequest.IsValid() || !Field.IsValid())
 	{
 		return;
 	}
 
-	// If the store isn't ready, queue or reset the request and exit early.
+	// If the store isn't ready, reset the request and exit early.
 	if (!InStoreViewModel->HasStoreState(MolecularUITags::Store::State::Ready))
 	{
 		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Store not ready. Failing transaction request for %s"), __FUNCTION__,
@@ -255,6 +245,9 @@ void UStoreModel::OnTransactionRequestChanged_Implementation(UStoreViewModel* In
 		LazySellItem(TransactionRequest);
 		break;
 	}
+
+	SelectionViewModel_Store->ClearSelection();
+	SelectionViewModel_Store->ClearPreview();
 }
 
 void UStoreModel::OnRefreshRequestedChanged_Implementation(UStoreViewModel* InStoreViewModel, FFieldNotificationId Field)
@@ -295,13 +288,13 @@ void UStoreModel::OnItemInteractionChanged_Implementation(UItemViewModel* InItem
 			StoreViewModel->SetStatusMessage(FText::Format(
 				FText::FromString("Previewing item: {0} (from {1})"),
 				FText::FromString(ItemName), FText::FromString(SourceName)));
-			SelectionViewModel_Store->ToggleSelectViewModel(InItemVM);
+			SelectionViewModel_Store->PreviewViewModel(InItemVM);
 			break;
 		}
 	case EStatefulInteraction::Unhovered:
 		{
 			StoreViewModel->SetStatusMessage(FText::GetEmpty());
-			SelectionViewModel_Store->PreviewViewModel(nullptr); // Clear the preview selection
+			SelectionViewModel_Store->PreviewViewModel(SelectionViewModel_Store->GetLastSelectedViewModel());
 			break;
 		}
 	case EStatefulInteraction::Clicked:
@@ -611,9 +604,9 @@ void UStoreModel::RefreshStoreData_Implementation()
 	LazyLoadOwnedItems();
 	LazyLoadStoreCurrency();
 
-	SelectionViewModel_Store->ClearPreview(nullptr);
+	SelectionViewModel_Store->ClearPreview();
 	SelectionViewModel_Store->ClearSelection();
-	SelectionViewModel_Store_Tabs->ClearPreview(nullptr);
+	SelectionViewModel_Store_Tabs->ClearPreview();
 	SelectionViewModel_Store_Tabs->ClearSelection();
 
 }
