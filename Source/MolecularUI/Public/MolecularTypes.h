@@ -204,7 +204,7 @@ struct FCategoryTabDefinition
 	FStandardUIData UIData;
 };
 
-// Used to define how a user can select items in the UI, managed by ViewModel
+// Used to define how a user can select items in the UI, managed by a SelectionViewModel
 UENUM(BlueprintType)
 enum class EMolecularSelectionMode : uint8
 {

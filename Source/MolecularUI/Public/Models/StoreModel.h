@@ -83,16 +83,18 @@ protected:
 	// Whether to automatically generate categories based on the store items.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|CategoryTabs")
 	bool bAutoGenerateCategoriesFromItems = true;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|CategoryTabs")
-	EMolecularSelectionMode CategorySelectionMode = EMolecularSelectionMode::Single;
-	int32 MaxCategorySelectionCount = 1;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model")
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|Selection")
 	EMolecularSelectionMode StoreSelectionMode = EMolecularSelectionMode::Single;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|Selection", Meta = (EditCondition = "StoreSelectionMode == EMolecularSelectionMode::MultiLimited", EditConditionHides, ClampMin = "1"))
 	int32 MaxStoreSelectionCount = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|Selection")
+	EMolecularSelectionMode AvailableItemsTabsSelectionMode = EMolecularSelectionMode::Single;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|Selection", Meta = (EditCondition = "AvailableItemsTabsSelectionMode == EMolecularSelectionMode::MultiLimited", EditConditionHides, ClampMin = "1"))
+	int32 MaxAvailableItemsTabsSelectionCount = 1;
 
 
 	// The single, authoritative instance of the Store ViewModel.

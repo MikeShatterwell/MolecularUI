@@ -10,7 +10,7 @@ void USelectionViewModel::SetSelectionMode(const EMolecularSelectionMode InMode)
 
 void USelectionViewModel::SetMaxSelectionCount(int32 InMaxCount)
 {
-	UE_MVVM_SET_PROPERTY_VALUE(MaxSelectionCount, InMaxCount);
+	UE_MVVM_SET_PROPERTY_VALUE(MaxSelectionCount, FMath::Max(InMaxCount, 1));
 }
 
 void USelectionViewModel::SetSelectedViewModels(const TArray<UMVVMViewModelBase*>& InSelected)
