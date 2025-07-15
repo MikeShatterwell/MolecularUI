@@ -25,6 +25,7 @@ namespace MolecularUITags
 	{
 		namespace Category
 		{
+			UE_DEFINE_GAMEPLAY_TAG(All, "Item.Category.All");
 			UE_DEFINE_GAMEPLAY_TAG(Consumable, "Item.Category.Consumable");
 			UE_DEFINE_GAMEPLAY_TAG(Equipment, "Item.Category.Equipment");
 			UE_DEFINE_GAMEPLAY_TAG(Resource, "Item.Category.Resource");

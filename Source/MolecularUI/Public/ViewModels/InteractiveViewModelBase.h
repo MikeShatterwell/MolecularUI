@@ -12,7 +12,7 @@
 /**
  * Base class for ViewModels that handle user interactions using stateful communication.
  */
-UCLASS(BlueprintType)
+UCLASS(Blueprintable)
 class MOLECULARUI_API UInteractiveViewModelBase : public UMVVMViewModelBase
 {
 	GENERATED_BODY()

@@ -2,6 +2,7 @@
 
 #include "Models/StoreModel.h"
 
+#include <MVVMGameSubsystem.h>
 #include <TimerManager.h>
 
 #include "ViewModels/StoreViewModel.h"
@@ -11,6 +12,7 @@
 #include "Utils/LogMolecularUI.h"
 #include "DataProviders/MockStoreDataProviderSubsystem.h"
 #include "ViewModels/CategoryViewModel.h"
+#include "ViewModels/SelectionViewModel.h"
 
 namespace UStoreSubsystem_private
 {
@@ -52,9 +54,14 @@ void UStoreModel::InitializeModel_Implementation(UWorld* World)
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 	Super::InitializeModel_Implementation(World);
 
+	if (!IsValid(World))
+	{
+		return;
+	}
+
 	// Use a different class when not using the mock data provider.
 	// This example doesn't have a "real" data provider.
-	UGameInstanceSubsystem* StoreDataProviderSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UMockStoreDataProviderSubsystem>();
+	UGameInstanceSubsystem* StoreDataProviderSubsystem = World->GetGameInstance()->GetSubsystem<UMockStoreDataProviderSubsystem>();
 
 	if (IsValid(StoreDataProviderSubsystem)
 		&& StoreDataProviderSubsystem->GetClass()->ImplementsInterface(UStoreDataProvider::StaticClass()))
@@ -63,12 +70,60 @@ void UStoreModel::InitializeModel_Implementation(UWorld* World)
 		StoreDataProviderInterface.SetInterface(Cast<IStoreDataProvider>(StoreDataProviderSubsystem));
 	}
 
-	StoreViewModel = NewObject<UStoreViewModel>(this);
-	// Start in a "None" state so initial loads can be triggered on first access.
-	StoreViewModel->AddStoreState(MolecularUITags::Store::State::None);
+	if (!IsValid(StoreViewModel))
+	{
+		StoreViewModel = NewObject<UStoreViewModel>(this);
+		// Start in a "None" state so initial loads can be triggered on first access.
+		StoreViewModel->AddStoreState(MolecularUITags::Store::State::None);
+	}
+
+	UGameInstance* GameInstance = World->GetGameInstance();
+	UMVVMGameSubsystem* MVVMGameSubsystem = GameInstance->GetSubsystem<UMVVMGameSubsystem>();
+	UMVVMViewModelCollectionObject* Collection = MVVMGameSubsystem->GetViewModelCollection();
+
+
+	// Initialize SelectionViewModels.
+	if (!IsValid(SelectionViewModel_Store))
+	{
+		FMVVMViewModelContext Context;
+		Context.ContextName = FName(TEXT("SelectionViewModel_Store"));
+		Context.ContextClass = USelectionViewModel::StaticClass();
+		
+		SelectionViewModel_Store = NewObject<USelectionViewModel>(this);
+		SelectionViewModel_Store->SetSelectionMode(StoreSelectionMode);
+		Collection->AddViewModelInstance(Context, SelectionViewModel_Store);
+	}
+
+	if (!IsValid(SelectionViewModel_Store_Tabs))
+	{
+		// Get the SelectionViewModel_Store_Tabs from the global collection.
+		FMVVMViewModelContext Context;
+		Context.ContextName = FName(TEXT("StoreViewModel_Store_Tabs"));
+		Context.ContextClass = USelectionViewModel::StaticClass();
+		SelectionViewModel_Store_Tabs = NewObject<USelectionViewModel>(this);
+		SelectionViewModel_Store_Tabs->SetSelectionMode(StoreSelectionMode);
+		Collection->AddViewModelInstance(Context, SelectionViewModel_Store_Tabs);
+	}
+
+	// Add default category tabs for the available items list.
+	TArray<UCategoryViewModel*> CategoryTabViewModels_AvailableItems;
+	for (const FCategoryTabDefinition& CategoryTab : DefaultCategoryTabs_AvailableItems)
+	{
+		UCategoryViewModel* CategoryVM = NewObject<UCategoryViewModel>(StoreViewModel);
+		CategoryVM->SetCategoryTag(CategoryTab.CategoryTag);
+		CategoryVM->SetUIData(CategoryTab.UIData);
+
+		UE_MVVM_BIND_FIELD(UCategoryViewModel, CategoryVM, Interaction, OnItemCategoryInteractionChanged);
+		CategoryTabViewModels_AvailableItems.Add(CategoryVM);
+	}
+	StoreViewModel->SetCategoryTabs_AvailableItems(CategoryTabViewModels_AvailableItems);
+	if (!CategoryTabViewModels_AvailableItems.IsEmpty())
+	{
+		// Select the first category tab by default.
+		SelectionViewModel_Store_Tabs->ToggleSelectViewModel(CategoryTabViewModels_AvailableItems[0]);
+	}
 
 	UE_MVVM_BIND_FIELD(UStoreViewModel, StoreViewModel, FilterText, OnFilterTextChanged);
-	UE_MVVM_BIND_FIELD(UStoreViewModel, StoreViewModel, SelectedCategories, OnSelectedCategoriesChanged);
 	UE_MVVM_BIND_FIELD(UStoreViewModel, StoreViewModel, TransactionRequest, OnTransactionRequestChanged);
 	UE_MVVM_BIND_FIELD(UStoreViewModel, StoreViewModel, bRefreshRequested, OnRefreshRequestedChanged);
 }
@@ -78,7 +133,6 @@ void UStoreModel::DeinitializeModel_Implementation()
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
 	UE_MVVM_UNBIND_FIELD(StoreViewModel, FilterText);
-	UE_MVVM_UNBIND_FIELD(StoreViewModel, SelectedCategories);
 	UE_MVVM_UNBIND_FIELD(StoreViewModel, TransactionRequest);
 	UE_MVVM_UNBIND_FIELD(StoreViewModel, bRefreshRequested);
 
@@ -96,12 +150,14 @@ void UStoreModel::DeinitializeModel_Implementation()
 			UE_MVVM_UNBIND_FIELD(ItemVM, Interaction);
 			for (UCategoryViewModel* CategoryVM : ItemVM->GetCategoryViewModels())
 			{
-				if (IsValid(CategoryVM))
-				{
-					UE_MVVM_UNBIND_FIELD(CategoryVM, Interaction);
-				}
+				UE_MVVM_UNBIND_FIELD(CategoryVM, Interaction);
 			}
 		}
+	}
+
+	for (UCategoryViewModel* CategoryVM : StoreViewModel->GetCategoryTabs_AvailableItems())
+	{
+		UE_MVVM_UNBIND_FIELD(CategoryVM, Interaction);
 	}
 
 	StoreViewModel = nullptr;
@@ -116,24 +172,35 @@ void UStoreModel::DeinitializeModel_Implementation()
 // End UMolecularModelBase interface.
 
 // Begin IViewModelProvider implementation.
-UMVVMViewModelBase* UStoreModel::GetViewModel_Implementation(TSubclassOf<UMVVMViewModelBase> ViewModelClass)
+UMVVMViewModelBase* UStoreModel::GetViewModel_Implementation(FMVVMViewModelContext ViewModelContext)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
-	if (!IsValid(StoreViewModel))
+
+	if (IsValid(StoreViewModel) && ViewModelContext.IsCompatibleWith(StoreViewModel->GetClass()))
 	{
-		UE_LOG(LogMolecularUI, Error, TEXT("[%hs] UStoreSubsystem is not initialized yet!"), __FUNCTION__);
-		return nullptr;
+		if (StoreViewModel->HasStoreState(MolecularUITags::Store::State::None))
+		{
+			StoreViewModel->RemoveStoreState(MolecularUITags::Store::State::None);
+
+			// Load stuff on initial open
+			RefreshStoreData();
+		}
+		return StoreViewModel;
 	}
 
-	if (StoreViewModel->HasStoreState(MolecularUITags::Store::State::None))
+	if (IsValid(SelectionViewModel_Store) && ViewModelContext.IsCompatibleWith(SelectionViewModel_Store->GetClass()))
 	{
-		StoreViewModel->RemoveStoreState(MolecularUITags::Store::State::None);
-
-		// Load stuff on initial open
-		RefreshStoreData();
+		return SelectionViewModel_Store;
 	}
 
-	return StoreViewModel;
+	if (IsValid(SelectionViewModel_Store_Tabs) && ViewModelContext.IsCompatibleWith(SelectionViewModel_Store_Tabs->GetClass()))
+	{
+		return SelectionViewModel_Store_Tabs;
+	}
+
+	UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] No matching ViewModel found for context: %s"), 
+		__FUNCTION__, *ViewModelContext.ContextName.ToString());
+	return nullptr;
 }
 // End IViewModelProvider implementation.
 
@@ -228,13 +295,13 @@ void UStoreModel::OnItemInteractionChanged_Implementation(UItemViewModel* InItem
 			StoreViewModel->SetStatusMessage(FText::Format(
 				FText::FromString("Previewing item: {0} (from {1})"),
 				FText::FromString(ItemName), FText::FromString(SourceName)));
-			StoreViewModel->SetPreviewedItem(InItemVM);
+			SelectionViewModel_Store->ToggleSelectViewModel(InItemVM);
 			break;
 		}
 	case EStatefulInteraction::Unhovered:
 		{
 			StoreViewModel->SetStatusMessage(FText::GetEmpty());
-			StoreViewModel->SetPreviewedItem(StoreViewModel->GetSelectedItem());
+			SelectionViewModel_Store->PreviewViewModel(nullptr); // Clear the preview selection
 			break;
 		}
 	case EStatefulInteraction::Clicked:
@@ -243,7 +310,9 @@ void UStoreModel::OnItemInteractionChanged_Implementation(UItemViewModel* InItem
 			StoreViewModel->SetStatusMessage(FText::Format(
 				FText::FromString("Clicked on item: {0} (from {1})"),
 				FText::FromString(ItemName), FText::FromString(SourceName)));
-			StoreViewModel->SetSelectedItem(InItemVM);
+			
+			SelectionViewModel_Store->ToggleSelectViewModel(InItemVM);
+			
 			if (InItemVM->GetItemData().bIsOwned)
 			{
 				// Passes the "client-side" check that the item can be sold.
@@ -284,7 +353,6 @@ void UStoreModel::OnItemCategoryInteractionChanged_Implementation(UCategoryViewM
 		return; // No valid interaction to process
 	}
 
-	const FString& SourceName = Interaction.Source.ToString();
 	const FString& CategoryTag = InCategoryVM->GetCategoryTag().ToString();
 
 	// Handle the interaction based on its type
@@ -293,11 +361,6 @@ void UStoreModel::OnItemCategoryInteractionChanged_Implementation(UCategoryViewM
 	case EStatefulInteraction::None:
 		break;
 	case EStatefulInteraction::Hovered:
-		{
-			StoreViewModel->SetStatusMessage(FText::Format(
-				FText::FromString("Previewing category: {0} (from {1})"),
-				FText::FromString(CategoryTag), FText::FromString(SourceName)));
-		}
 		break;
 	case EStatefulInteraction::Unhovered:
 		{
@@ -305,25 +368,18 @@ void UStoreModel::OnItemCategoryInteractionChanged_Implementation(UCategoryViewM
 		}
 		break;
 	case EStatefulInteraction::Clicked:
-		TArray<TObjectPtr<UCategoryViewModel>> SelectedCategories = StoreViewModel->GetSelectedCategories();
-		if (SelectedCategories.Contains(InCategoryVM))
 		{
-			SelectedCategories.Remove(InCategoryVM);
+			SelectionViewModel_Store_Tabs->ToggleSelectViewModel(InCategoryVM);
+
 			StoreViewModel->SetStatusMessage(FText::Format(
-				FText::FromString("Unselected category: {0}, from {1}"),
-				FText::FromString(CategoryTag), FText::FromString(SourceName)));
-			StoreViewModel->SetSelectedCategories(SelectedCategories); // Update the ViewModel with the removed category
-		}
-		else
-		{
-			SelectedCategories.Add(InCategoryVM);
-			StoreViewModel->SetStatusMessage(FText::Format(
-				FText::FromString("Selected category: {0}, from {1}"),
-				FText::FromString(CategoryTag), FText::FromString(SourceName)));
-			StoreViewModel->SetSelectedCategories(SelectedCategories); // Update the ViewModel with the added category
+				FText::FromString("{0} category: {1}"),
+				FText::FromString(CategoryTag),
+				FText::FromString(Interaction.ToString())
+			));
 		}
 		break;
 	}
+
 
 	// Reset the interaction state after processing
 	InCategoryVM->ClearInteraction();
@@ -498,7 +554,7 @@ void UStoreModel::FilterAvailableStoreItems_Implementation()
 	}
 
 	const FString& FilterText = StoreViewModel->GetFilterText();
-	const TArray<TObjectPtr<UCategoryViewModel>> SelectedCategories = StoreViewModel->GetSelectedCategories();
+	const TArray<UMVVMViewModelBase*>& SelectedCategories_AvailableItems = SelectionViewModel_Store_Tabs->GetSelectedViewModels();
 
 	TArray<TObjectPtr<UItemViewModel>> FilteredItems;
 	FilteredItems.Reserve(CachedStoreItems.Num());
@@ -518,20 +574,22 @@ void UStoreModel::FilterAvailableStoreItems_Implementation()
 		}
 
 		// Category filter pass
-		if (SelectedCategories.Num() > 0)
+		for (UMVVMViewModelBase* SelectedVM : SelectedCategories_AvailableItems)
 		{
-			bool bCategoryMatch = false;
-			for (const TObjectPtr<UCategoryViewModel>& SelectedCategory : SelectedCategories)
-			{
-				if (ItemData.Categories.HasTag(SelectedCategory->GetCategoryTag()))
-				{
-					bCategoryMatch = true;
-					break;
-				}
-			}
-			if (!bCategoryMatch)
+			UCategoryViewModel* SelectedCategoryVM = Cast<UCategoryViewModel>(SelectedVM);
+			if (!IsValid(SelectedCategoryVM))
 			{
 				continue;
+			}
+
+			if (!SelectedCategoryVM->IsAll())
+			{
+				const FGameplayTag SelectedCategoryTag = SelectedCategoryVM->GetCategoryTag();
+				const bool bCategoryMatch = SelectedCategoryTag.IsValid() && ItemData.Categories.HasTag(SelectedCategoryTag);
+				if (!bCategoryMatch)
+				{
+					continue;
+				}
 			}
 		}
 
@@ -553,8 +611,11 @@ void UStoreModel::RefreshStoreData_Implementation()
 	LazyLoadOwnedItems();
 	LazyLoadStoreCurrency();
 
-	StoreViewModel->SetPreviewedItem(nullptr);
-	StoreViewModel->SetSelectedItem(nullptr);
+	SelectionViewModel_Store->ClearPreview(nullptr);
+	SelectionViewModel_Store->ClearSelection();
+	SelectionViewModel_Store_Tabs->ClearPreview(nullptr);
+	SelectionViewModel_Store_Tabs->ClearSelection();
+
 }
 
 UItemViewModel* UStoreModel::GetOrCreateItemViewModel(const FStoreItem& ItemData)
@@ -598,7 +659,10 @@ UItemViewModel* UStoreModel::GetOrCreateItemViewModel(const FStoreItem& ItemData
 	
 		UE_MVVM_BIND_FIELD(UCategoryViewModel, CategoryVM, Interaction, OnItemCategoryInteractionChanged);
 		CategoryVMs.Add(CategoryVM);
-		StoreViewModel->AddCategory(CategoryVM);
+		if (bAutoGenerateCategoriesFromItems)
+		{
+			StoreViewModel->AddCategory_AvailableItems(CategoryVM);
+		}
 	}
 	NewItemVM->SetCategoryViewModels(CategoryVMs);
 

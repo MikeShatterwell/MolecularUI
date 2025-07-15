@@ -17,7 +17,7 @@ UObject* UGenericViewModelResolver::CreateInstance(const UClass* ExpectedType, c
 		return nullptr;
 	}
 
-	const UWorld* World = UserWidget ? UserWidget->GetWorld() : nullptr;
+	UWorld* World = UserWidget ? UserWidget->GetWorld() : nullptr;
 	if (!IsValid(World))
 	{
 		UE_LOG(LogMolecularUI, Error, TEXT("UserWidget does not have a valid world for generic view model resolver"));
@@ -48,16 +48,14 @@ UObject* UGenericViewModelResolver::CreateInstance(const UClass* ExpectedType, c
 	}
 
 	// Copy editable properties from the template to the runtime instance.
-	if (Model != ModelInstance)
+	for (TFieldIterator<FProperty> PropIt(ModelClass); PropIt; ++PropIt)
 	{
-		for (TFieldIterator<FProperty> PropIt(ModelClass); PropIt; ++PropIt)
+		if (const FProperty* Prop = *PropIt; Prop->HasAnyPropertyFlags(CPF_Edit))
 		{
-			if (const FProperty* Prop = *PropIt; Prop->HasAnyPropertyFlags(CPF_Edit))
-			{
-				Prop->CopyCompleteValue_InContainer(ModelInstance, Model);
-			}
+			Prop->CopyCompleteValue_InContainer(ModelInstance, Model);
 		}
 	}
+	ModelInstance->InitializeModel(World);
 
 	// Check if the model implements the generic provider interface.
 	if (!ModelInstance->Implements<UViewModelProvider>())
@@ -67,7 +65,8 @@ UObject* UGenericViewModelResolver::CreateInstance(const UClass* ExpectedType, c
 	}
 
 	const TSubclassOf<UMVVMViewModelBase> ExpectedTypeClass = ExpectedType->GetDefaultObject<UMVVMViewModelBase>()->GetClass();
-	UMVVMViewModelBase* ViewModel = IViewModelProvider::Execute_GetViewModel(ModelInstance, ExpectedTypeClass);
+	const FMVVMViewModelContext ViewModelContext(ExpectedTypeClass, ViewModelName);
+	UMVVMViewModelBase* ViewModel = IViewModelProvider::Execute_GetViewModel(ModelInstance, ViewModelContext);
 	if (!IsValid(ViewModel))
 	{
 		UE_LOG(LogTemp, Error, TEXT("IViewModelProvider returned null"));

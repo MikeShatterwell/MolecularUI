@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <Types/MVVMViewModelContext.h>
+
 #include "CoreMinimal.h"
 #include <UObject/Object.h>
 
@@ -25,7 +27,7 @@ public:
 	virtual void DeinitializeModel_Implementation() {}
 
 	// Begin IViewModelProvider interface.
-	virtual UMVVMViewModelBase* GetViewModel_Implementation(TSubclassOf<UMVVMViewModelBase> ViewModelClass) override
+	virtual UMVVMViewModelBase* GetViewModel_Implementation(FMVVMViewModelContext ViewModelContext) override
 	{
 		return nullptr;
 	}

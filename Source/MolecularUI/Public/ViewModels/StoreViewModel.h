@@ -23,22 +23,13 @@ public:
 	// Setters and Getters
 	void SetPlayerCurrency(const int32 InCurrency) { UE_MVVM_SET_PROPERTY_VALUE(PlayerCurrency, InCurrency); }
 	int32 GetPlayerCurrency() const { return PlayerCurrency; }
-
-	void SetSelectedItem(UItemViewModel* InViewModel) { UE_MVVM_SET_PROPERTY_VALUE(SelectedItem, InViewModel); }
-	UItemViewModel* GetSelectedItem() const { return SelectedItem; }
-
-	void SetPreviewedItem(UItemViewModel* InViewModel) { UE_MVVM_SET_PROPERTY_VALUE(PreviewedItem, InViewModel); }
-	UItemViewModel* GetPreviewedItem() const { return PreviewedItem; }
-
+	
 	void SetTransactionRequest(const FTransactionRequest& InRequest) { UE_MVVM_SET_PROPERTY_VALUE(TransactionRequest, InRequest); }
 	FTransactionRequest GetTransactionRequest() const { return TransactionRequest; }
 
-	void SetSelectedCategories(const TArray<TObjectPtr<UCategoryViewModel>>& InCategories) { UE_MVVM_SET_PROPERTY_VALUE(SelectedCategories, InCategories); }
-	const TArray<TObjectPtr<UCategoryViewModel>>& GetSelectedCategories() const { return SelectedCategories; }
-
-	void AddCategory(UCategoryViewModel* InCategory)
+	void AddCategory_AvailableItems(UCategoryViewModel* InCategory)
 	{
-		TArray<TObjectPtr<UCategoryViewModel>> NewCategories = AllCategories;
+		TArray<TObjectPtr<UCategoryViewModel>> NewCategories = CategoryTabs_AvailableItems;
 		if (!IsValid(InCategory))
 		{
 			return;
@@ -51,10 +42,10 @@ public:
 			return; // Category already exists, no need to add it again.
 		}
 		NewCategories.Add(InCategory);
-		SetAllCategories(NewCategories);
+		SetCategoryTabs_AvailableItems(NewCategories);
 	}
-	void SetAllCategories(const TArray<TObjectPtr<UCategoryViewModel>>& InCategories) { UE_MVVM_SET_PROPERTY_VALUE(AllCategories, InCategories); }
-	const TArray<TObjectPtr<UCategoryViewModel>>& GetAllCategories() const { return AllCategories; }
+	void SetCategoryTabs_AvailableItems(const TArray<UCategoryViewModel*>& InCategories) { UE_MVVM_SET_PROPERTY_VALUE(CategoryTabs_AvailableItems, InCategories); }
+	const TArray<TObjectPtr<UCategoryViewModel>>& GetCategoryTabs_AvailableItems() const { return CategoryTabs_AvailableItems; }
 
 	void SetTransactionType(const ETransactionType InType) { UE_MVVM_SET_PROPERTY_VALUE(TransactionType, InType); }
 	ETransactionType GetTransactionType() const { return TransactionType; }
@@ -117,7 +108,9 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	TArray<TObjectPtr<UItemViewModel>> OwnedItems;
-
+	
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Getter, Category = "Store ViewModel")
+	TArray<TObjectPtr<UCategoryViewModel>> CategoryTabs_AvailableItems;
 
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter = SetStoreStates, Getter = GetStoreStates, Category = "Store ViewModel")
 	FGameplayTagContainer StoreStates;
@@ -127,10 +120,13 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
 	FText StatusMessage = FText::GetEmpty();
+	
 
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Category = "Transaction Request")
+	ETransactionType TransactionType = ETransactionType::None;
 
 	/* These are the "Intent Channels" that allow the ViewModel to communicate with the Model. */
-	// The UI sets this when the user hovers or selects an item. Other UI elements can bind to this to show details.
+	// The UI sets this when the user requests a transaction (e.g., purchase or sell an item) for the current TransactionType.
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel | Intent")
 	FTransactionRequest TransactionRequest;
 
@@ -139,21 +135,7 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter = "SetRefreshRequested", Getter = "GetRefreshRequested", Category = "Store ViewModel | Intent")
 	bool bRefreshRequested = false;
-
-	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
-	TObjectPtr<UItemViewModel> SelectedItem = nullptr;
 	
-	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
-	TObjectPtr<UItemViewModel> PreviewedItem = nullptr;
 
-	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
-	TArray<TObjectPtr<UCategoryViewModel>> SelectedCategories;
-	
-	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, Category = "Store ViewModel")
-	TArray<TObjectPtr<UCategoryViewModel>> AllCategories;
-
-
-	UPROPERTY(BlueprintReadWrite, FieldNotify, Category = "Transaction Request")
-	ETransactionType TransactionType = ETransactionType::None;
 };
 

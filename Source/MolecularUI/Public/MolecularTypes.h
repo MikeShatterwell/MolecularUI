@@ -192,3 +192,25 @@ struct FInteractionState
 	}
 };
 
+USTRUCT(BlueprintType)
+struct FCategoryTabDefinition
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Category Tab", Meta = (Categories = "Item.Category"))
+	FGameplayTag CategoryTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Category Tab")
+	FStandardUIData UIData;
+};
+
+// Used to define how a user can select items in the UI, managed by ViewModel
+UENUM(BlueprintType)
+enum class EMolecularSelectionMode : uint8
+{
+	None,
+	Single,
+	SingleToggle,
+	Multi,
+	MultiLimited
+};

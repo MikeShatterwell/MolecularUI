@@ -21,5 +21,5 @@ class IViewModelProvider
 
 public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "MVVM")
-	UMVVMViewModelBase* GetViewModel(TSubclassOf<UMVVMViewModelBase> ViewModelClass);
+	UMVVMViewModelBase* GetViewModel(FMVVMViewModelContext ViewModelContext);
 };

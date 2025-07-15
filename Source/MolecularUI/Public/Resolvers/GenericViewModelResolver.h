@@ -20,4 +20,7 @@ class MOLECULARUI_API UGenericViewModelResolver : public UMVVMViewModelContextRe
 public:
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Molecular UI")
 	TObjectPtr<UMolecularModelBase> Model = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Molecular UI")
+	FName ViewModelName;
 };

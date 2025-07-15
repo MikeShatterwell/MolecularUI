@@ -29,6 +29,7 @@ namespace MolecularUITags
 	{
 		namespace Category
 		{
+			TAG(All);
 			TAG(Consumable);
 			TAG(Equipment);
 			TAG(Resource);

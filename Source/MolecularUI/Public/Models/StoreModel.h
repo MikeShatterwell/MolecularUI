@@ -9,6 +9,8 @@
 #include "Models/MolecularModelBase.h"
 #include "StoreModel.generated.h"
 
+struct FMVVMViewModelContext;
+class USelectionViewModel;
 class UCategoryViewModel;
 class UMVVMViewModelBase;
 class UItemViewModel;
@@ -26,7 +28,7 @@ public:
 	// End UMolecularModelBase overrides.
 
 	// Begin IViewModelProvider override.
-	virtual UMVVMViewModelBase* GetViewModel_Implementation(TSubclassOf<UMVVMViewModelBase> ViewModelClass) override;
+	virtual UMVVMViewModelBase* GetViewModel_Implementation(FMVVMViewModelContext ViewModelContext) override;
 	// End IViewModelProvider override.
 
 protected:
@@ -73,10 +75,39 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
 	void RefreshStoreData();
 
+
+	// Predefined categories that are always added to the store model.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|CategoryTabs")
+	TArray<FCategoryTabDefinition> DefaultCategoryTabs_AvailableItems;
+
+	// Whether to automatically generate categories based on the store items.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|CategoryTabs")
+	bool bAutoGenerateCategoriesFromItems = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|CategoryTabs")
+	EMolecularSelectionMode CategorySelectionMode = EMolecularSelectionMode::Single;
+	int32 MaxCategorySelectionCount = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model")
+	EMolecularSelectionMode StoreSelectionMode = EMolecularSelectionMode::Single;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model")
+	int32 MaxStoreSelectionCount = 1;
+
+
 	// The single, authoritative instance of the Store ViewModel.
 	UPROPERTY(BlueprintReadWrite, Transient)
 	TObjectPtr<UStoreViewModel> StoreViewModel = nullptr;
-	
+
+	// Manages store item selection
+	UPROPERTY(BlueprintReadWrite, Transient)
+	TObjectPtr<USelectionViewModel> SelectionViewModel_Store = nullptr;
+
+	// Manages category tab selection
+	UPROPERTY(BlueprintReadWrite, Transient)
+	TObjectPtr<USelectionViewModel> SelectionViewModel_Store_Tabs = nullptr;
+
+
 	// Cache for item view models to reduce UObject churn.
 	UPROPERTY(Transient)
 	TMap<FName, TObjectPtr<UItemViewModel>> ItemViewModelCache;
