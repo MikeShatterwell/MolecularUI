@@ -17,7 +17,7 @@ class UInteractiveViewModelBase;
  * a system that's more compatible with the MVVM plugin, allowing the ViewModel to drive selection state.
  * 
  */
-UCLASS(Blueprintable)
+UCLASS(Blueprintable, EditInlineNew)
 class USelectionViewModel : public UMVVMViewModelBase
 {
 	GENERATED_BODY()
@@ -79,6 +79,6 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, FieldNotify, Setter, Getter, meta = (AllowPrivateAccess = true), Category = "Selection ViewModel")
 	EMolecularSelectionMode SelectionMode = EMolecularSelectionMode::Single;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, FieldNotify, Setter, Getter, meta = (AllowPrivateAccess = true, EditCondition = "SelectionMode == ESelectionMode::MultiLimited"), Category = "Selection ViewModel")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, FieldNotify, Setter, Getter, meta = (AllowPrivateAccess = true, EditCondition = "SelectionMode == ESelectionMode::MultiLimited", EditConditionHides), Category = "Selection ViewModel")
 	int32 MaxSelectionCount = 1;
 };

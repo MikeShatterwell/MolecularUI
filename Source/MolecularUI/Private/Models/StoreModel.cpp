@@ -77,21 +77,6 @@ void UStoreModel::InitializeModel_Implementation(UWorld* World)
 		StoreViewModel->AddStoreState(MolecularUITags::Store::State::None);
 	}
 
-	// Initialize SelectionViewModels.
-	if (!IsValid(SelectionViewModel_Store))
-	{
-		SelectionViewModel_Store = NewObject<USelectionViewModel>(this);
-		SelectionViewModel_Store->SetSelectionMode(StoreSelectionMode);
-		SelectionViewModel_Store->SetMaxSelectionCount(MaxStoreSelectionCount);
-	}
-
-	if (!IsValid(SelectionViewModel_Store_Tabs))
-	{
-		SelectionViewModel_Store_Tabs = NewObject<USelectionViewModel>(this);
-		SelectionViewModel_Store_Tabs->SetSelectionMode(AvailableItemsTabsSelectionMode);
-		SelectionViewModel_Store_Tabs->SetMaxSelectionCount(MaxAvailableItemsTabsSelectionCount);
-	}
-
 	// Add default category tabs for the available items list.
 	TArray<UCategoryViewModel*> CategoryTabViewModels_AvailableItems;
 	for (const FCategoryTabDefinition& CategoryTab : DefaultCategoryTabs_AvailableItems)

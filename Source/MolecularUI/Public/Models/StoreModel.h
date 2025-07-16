@@ -31,6 +31,8 @@ public:
 	virtual UMVVMViewModelBase* GetViewModel_Implementation(FMVVMViewModelContext ViewModelContext) override;
 	// End IViewModelProvider override.
 
+	// TODO: Add editor-time checking for selection vms
+
 protected:
 	// Reacts to changes in the ViewModel's properties.
 	UFUNCTION(BlueprintNativeEvent, Category = "Store Model")
@@ -84,30 +86,19 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|CategoryTabs")
 	bool bAutoGenerateCategoriesFromItems = true;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|Selection")
-	EMolecularSelectionMode StoreSelectionMode = EMolecularSelectionMode::Single;
+	// Manages store item selection
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Store Model|Selection")
+	TObjectPtr<USelectionViewModel> SelectionViewModel_Store = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|Selection", Meta = (EditCondition = "StoreSelectionMode == EMolecularSelectionMode::MultiLimited", EditConditionHides, ClampMin = "1"))
-	int32 MaxStoreSelectionCount = 1;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|Selection")
-	EMolecularSelectionMode AvailableItemsTabsSelectionMode = EMolecularSelectionMode::Single;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|Selection", Meta = (EditCondition = "AvailableItemsTabsSelectionMode == EMolecularSelectionMode::MultiLimited", EditConditionHides, ClampMin = "1"))
-	int32 MaxAvailableItemsTabsSelectionCount = 1;
-
+	// Manages category tab selection
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Store Model|Selection")
+	TObjectPtr<USelectionViewModel> SelectionViewModel_Store_Tabs = nullptr;
 
 	// The single, authoritative instance of the Store ViewModel.
 	UPROPERTY(BlueprintReadWrite, Transient)
 	TObjectPtr<UStoreViewModel> StoreViewModel = nullptr;
 
-	// Manages store item selection
-	UPROPERTY(BlueprintReadWrite, Transient)
-	TObjectPtr<USelectionViewModel> SelectionViewModel_Store = nullptr;
 
-	// Manages category tab selection
-	UPROPERTY(BlueprintReadWrite, Transient)
-	TObjectPtr<USelectionViewModel> SelectionViewModel_Store_Tabs = nullptr;
 
 
 	// Cache for item view models to reduce UObject churn.
