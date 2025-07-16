@@ -2,6 +2,8 @@
 
 #include "ViewModels/SelectionViewModel.h"
 
+#include "ViewModels/InteractiveViewModelBase.h"
+
 // Setters that trigger field notifications
 void USelectionViewModel::SetSelectionMode(const EMolecularSelectionMode InMode)
 {
@@ -13,23 +15,26 @@ void USelectionViewModel::SetMaxSelectionCount(int32 InMaxCount)
 	UE_MVVM_SET_PROPERTY_VALUE(MaxSelectionCount, FMath::Max(InMaxCount, 1));
 }
 
-void USelectionViewModel::SetSelectedViewModels(const TArray<UMVVMViewModelBase*>& InSelected)
+void USelectionViewModel::SetSelectedViewModels(const TArray<UInteractiveViewModelBase*>& InSelected)
 {
 	UE_MVVM_SET_PROPERTY_VALUE(LastSelectedViewModel, InSelected.IsEmpty() ? nullptr : InSelected.Last());
 	UE_MVVM_SET_PROPERTY_VALUE(SelectedViewModels, InSelected);
 }
 
-void USelectionViewModel::SetPreviewedViewModel(UMVVMViewModelBase* InPreviewed)
+void USelectionViewModel::SetPreviewedViewModel(UInteractiveViewModelBase* InPreviewed)
 {
 	UE_MVVM_SET_PROPERTY_VALUE(PreviewedViewModel, InPreviewed);
 }
 
 // Main selection handlers
-void USelectionViewModel::ToggleSelectViewModel(UMVVMViewModelBase* ClickedViewModel)
+void USelectionViewModel::ToggleSelectViewModel(UInteractiveViewModelBase* ClickedViewModel)
 {
-	if (!ClickedViewModel) return;
+	if (!IsValid(ClickedViewModel))
+	{
+		return;
+	}
 
-	TArray<UMVVMViewModelBase*> NewSelection = SelectedViewModels;
+	TArray<UInteractiveViewModelBase*> NewSelection = SelectedViewModels;
 	const bool bIsAlreadySelected = NewSelection.Contains(ClickedViewModel);
 
 	switch (SelectionMode)
@@ -80,7 +85,7 @@ void USelectionViewModel::ToggleSelectViewModel(UMVVMViewModelBase* ClickedViewM
 	SetSelectedViewModels(NewSelection);
 }
 
-void USelectionViewModel::PreviewViewModel(UMVVMViewModelBase* HoveredViewModel)
+void USelectionViewModel::PreviewViewModel(UInteractiveViewModelBase* HoveredViewModel)
 {
 	SetPreviewedViewModel(HoveredViewModel);
 }
@@ -96,7 +101,7 @@ void USelectionViewModel::ClearSelection()
 }
 
 // Helpers
-bool USelectionViewModel::IsViewModelSelected(const UMVVMViewModelBase* ViewModel) const
+bool USelectionViewModel::IsViewModelSelected(const UInteractiveViewModelBase* ViewModel) const
 {
 	return SelectedViewModels.Contains(ViewModel);
 }

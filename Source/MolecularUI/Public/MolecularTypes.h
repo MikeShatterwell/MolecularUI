@@ -116,23 +116,31 @@ struct FTransactionRequest
 	FTransactionRequest() = default;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Transaction Request")
-	FName ItemId = NAME_None;
+	TArray<FName> ItemIds;
 
 	// We need a custom equality operator for UE_MVVM_SET_PROPERTY_VALUE to work.
 	bool operator==(const FTransactionRequest& Other) const
 	{
-		return ItemId == Other.ItemId;
+		return ItemIds == Other.ItemIds;
 	}
 
 	bool IsValid() const
 	{
-		return ItemId != NAME_None;
+		return !ItemIds.IsEmpty() && ItemIds[0] != NAME_None;
 	}
 
 	FString ToString() const
 	{
-		return FString::Printf(TEXT("TransactionRequest: ItemId=%s"),
-							   *ItemId.ToString());
+		FString ItemIdsString;
+		for (const FName& ItemId : ItemIds)
+		{
+			if (!ItemIdsString.IsEmpty())
+			{
+				ItemIdsString += TEXT(", ");
+			}
+			ItemIdsString += ItemId.ToString();
+		}
+		return FString::Printf(TEXT("TransactionRequest: ItemIds=[%s]"), *ItemIdsString);
 	}
 };
 

@@ -300,7 +300,16 @@ void UStoreModel::OnItemInteractionChanged_Implementation(UItemViewModel* InItem
 			StoreViewModel->SetStatusMessage(FText::Format(
 				FText::FromString("Clicked on item: {0} (from {1})"),
 				FText::FromString(ItemName), FText::FromString(SourceName)));
-			
+
+			// Avoid mixing owned items with the store's available items in the selection.
+			const UItemViewModel* LastSelectedVM = Cast<UItemViewModel>(SelectionViewModel_Store->GetLastSelectedViewModel());
+			if (IsValid(LastSelectedVM))
+			{
+				if (LastSelectedVM->GetItemData().bIsOwned != InItemVM->GetItemData().bIsOwned)
+				{
+					SelectionViewModel_Store->ClearSelection();
+				}
+			}
 			SelectionViewModel_Store->ToggleSelectViewModel(InItemVM);
 			
 			if (InItemVM->GetItemData().bIsOwned)
@@ -544,7 +553,7 @@ void UStoreModel::FilterAvailableStoreItems_Implementation()
 	}
 
 	const FString& FilterText = StoreViewModel->GetFilterText();
-	const TArray<UMVVMViewModelBase*>& SelectedCategories_AvailableItems = SelectionViewModel_Store_Tabs->GetSelectedViewModels();
+	const TArray<UInteractiveViewModelBase*>& SelectedCategories_AvailableItems = SelectionViewModel_Store_Tabs->GetSelectedViewModels();
 
 	TArray<TObjectPtr<UItemViewModel>> FilteredItems;
 	FilteredItems.Reserve(CachedStoreItems.Num());
@@ -564,7 +573,7 @@ void UStoreModel::FilterAvailableStoreItems_Implementation()
 		}
 
 		// Category filter pass
-		for (UMVVMViewModelBase* SelectedVM : SelectedCategories_AvailableItems)
+		for (UInteractiveViewModelBase* SelectedVM : SelectedCategories_AvailableItems)
 		{
 			UCategoryViewModel* SelectedCategoryVM = Cast<UCategoryViewModel>(SelectedVM);
 			if (!IsValid(SelectedCategoryVM))

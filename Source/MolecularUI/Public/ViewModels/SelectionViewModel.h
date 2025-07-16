@@ -9,6 +9,7 @@
 
 #include "SelectionViewModel.generated.h"
 
+class UInteractiveViewModelBase;
 /*
  * A ViewModel for managing selections in a UI, supporting single, multi, and limited multi-selection modes.
  *
@@ -36,20 +37,20 @@ public:
 	void SetMaxSelectionCount(int32 InMaxCount);
 
 	UFUNCTION(BlueprintPure, FieldNotify, Category="Selection ViewModel")
-	const TArray<UMVVMViewModelBase*>& GetSelectedViewModels() const { return SelectedViewModels; }
+	const TArray<UInteractiveViewModelBase*>& GetSelectedViewModels() const { return SelectedViewModels; }
 	
 	UFUNCTION(BlueprintPure, FieldNotify, Category="Selection ViewModel")
-	UMVVMViewModelBase* GetPreviewedViewModel() const { return PreviewedViewModel; }
+	UInteractiveViewModelBase* GetPreviewedViewModel() const { return PreviewedViewModel; }
 
 	UFUNCTION(BlueprintPure, FieldNotify, Category="Selection ViewModel")
-	UMVVMViewModelBase* GetLastSelectedViewModel() const { return LastSelectedViewModel; }
+	UInteractiveViewModelBase* GetLastSelectedViewModel() const { return LastSelectedViewModel; }
 
 	// Main selection handlers
 	UFUNCTION(BlueprintCallable, Category="Selection ViewModel")
-	void ToggleSelectViewModel(UMVVMViewModelBase* ClickedViewModel);
+	void ToggleSelectViewModel(UInteractiveViewModelBase* ClickedViewModel);
 
 	UFUNCTION(BlueprintCallable, Category="Selection ViewModel")
-	void PreviewViewModel(UMVVMViewModelBase* HoveredViewModel);
+	void PreviewViewModel(UInteractiveViewModelBase* HoveredViewModel);
 
 	UFUNCTION(BlueprintCallable, Category = "Selection ViewModel")
 	void ClearPreview();
@@ -59,21 +60,20 @@ public:
 
 	// Helpers
 	UFUNCTION(BlueprintCallable, Category = "Selection ViewModel")
-	bool IsViewModelSelected(const UMVVMViewModelBase* ViewModel) const;
+	bool IsViewModelSelected(const UInteractiveViewModelBase* ViewModel) const;
 
 private:
-	void SetSelectedViewModels(const TArray<UMVVMViewModelBase*>& InSelected);
-	void SetPreviewedViewModel(UMVVMViewModelBase* InPreviewed);
+	void SetSelectedViewModels(const TArray<UInteractiveViewModelBase*>& InSelected);
+	void SetPreviewedViewModel(UInteractiveViewModelBase* InPreviewed);
 
-private:
 	UPROPERTY(BlueprintReadWrite, FieldNotify, meta=(AllowPrivateAccess=true), Category="Selection ViewModel")
-	TArray<TObjectPtr<UMVVMViewModelBase>> SelectedViewModels;
+	TArray<TObjectPtr<UInteractiveViewModelBase>> SelectedViewModels;
 
 	UPROPERTY(BlueprintReadWrite, FieldNotify, Getter, meta=(AllowPrivateAccess=true), Category="Selection ViewModel")
-	TObjectPtr<UMVVMViewModelBase> LastSelectedViewModel = nullptr;
+	TObjectPtr<UInteractiveViewModelBase> LastSelectedViewModel = nullptr;
 
-	UPROPERTY(BlueprintReadWrite, FieldNotify, Setter, Getter, meta=(AllowPrivateAccess=true), Category="Selection ViewModel")
-	TObjectPtr<UMVVMViewModelBase> PreviewedViewModel = nullptr;
+	UPROPERTY(BlueprintReadWrite, FieldNotify, Getter, meta=(AllowPrivateAccess=true), Category="Selection ViewModel")
+	TObjectPtr<UInteractiveViewModelBase> PreviewedViewModel = nullptr;
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, FieldNotify, Setter, Getter, meta = (AllowPrivateAccess = true), Category = "Selection ViewModel")

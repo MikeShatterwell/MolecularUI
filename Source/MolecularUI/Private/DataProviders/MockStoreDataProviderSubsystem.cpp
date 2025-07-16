@@ -116,31 +116,54 @@ void UMockStoreDataProviderSubsystem::PurchaseItem(const FTransactionRequest& Re
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
 	/*Callback*/
-	auto SuccessWrapper = [this, Request, OnSuccess, OnFailure]()
+	auto SuccessWrapper = [this, /*FTransactionRequest*/ Request, OnSuccess, OnFailure]()
 	{
-		FStoreItem* FoundItem = BackendStoreItems.FindByPredicate([&](const FStoreItem& Item)
+		// This represents the actual backend/server check for purchasing items.
+		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Backend call successful! Carrying out purchase request: %s"), __FUNCTION__, *Request.ToString());
+		int32 TotalCost = 0;
+		TArray<FStoreItem*> ItemsToPurchase;
+		for (const FName& ItemId : Request.ItemIds)
 		{
-			return Item.ItemId == Request.ItemId;
-		});
-		if (FoundItem == nullptr)
-		{
-			OnFailure(FText::FromString(TEXT("Item not found.")));
-			return;
+			FStoreItem* FoundItem = BackendStoreItems.FindByPredicate([&](const FStoreItem& Item)
+			{
+				return Item.ItemId == ItemId;
+			});
+			if (FoundItem == nullptr)
+			{
+				const FString& ErrorText = FString::Printf(TEXT("Item %s not found in store."), *ItemId.ToString());
+				UE_LOG(LogMolecularUI, Error, TEXT("%s"), *ErrorText);
+				OnFailure(FText::FromString(ErrorText)); // TODO: Handle localization properly on all user-facing messages.
+				return;
+			}
+			if (FoundItem->bIsOwned)
+			{
+				const FString& ErrorText = FString::Printf(TEXT("[%hs] Item %s is already owned and cannot be purchased."), __FUNCTION__, *FoundItem->ItemId.ToString());
+				UE_LOG(LogMolecularUI, Error, TEXT("%s"), *ErrorText);
+				OnFailure(FText::FromString(ErrorText));
+				return;
+			}
+			UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Found item %s with cost %d."), __FUNCTION__, *FoundItem->ItemId.ToString(), FoundItem->Cost);
+			TotalCost += FoundItem->Cost;
+			ItemsToPurchase.Add(FoundItem);
 		}
-		const bool bCanPurchase = BackendPlayerCurrency >= FoundItem->Cost;
-		if (!bCanPurchase || FoundItem->bIsOwned)
+		if (BackendPlayerCurrency < TotalCost)
 		{
-			OnFailure(FText::FromString(TEXT("Insufficient currency or item owned.")));
+			const FString& ErrorText = FString::Printf(TEXT("[%hs] Insufficient currency to carry out the purchase: %s"), __FUNCTION__, *Request.ToString());
+			UE_LOG(LogMolecularUI, Error, TEXT("%s"), *ErrorText);
+			OnFailure(FText::FromString(FString::Printf(TEXT("Insufficient currency to carry out the purchase: %s"), *Request.ToString())));
 			return;
 		}
 
-		FoundItem->bIsOwned = true; // Mark the item as owned in the store items list.
+		// Simulate the purchase
+		for (FStoreItem* Item : ItemsToPurchase)
+		{
+			UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Simulating purchase of item %s with cost %d."), __FUNCTION__, *Item->ItemId.ToString(), Item->Cost);
+			Item->bIsOwned = true;
+			BackendPlayerCurrency -= Item->Cost;
+			BackendOwnedStoreItems.AddUnique(*Item);
+			BackendStoreItems.RemoveAll([&](const FStoreItem& StoreItem){ return StoreItem.ItemId == Item->ItemId; });
+		}
 
-		FStoreItem PurchasedItem = *FoundItem;
-		BackendPlayerCurrency -= PurchasedItem.Cost; // Deduct full cost from player currency.
-		BackendOwnedStoreItems.AddUnique(PurchasedItem); // Add a copy to owned items.
-		BackendStoreItems.RemoveAll([&](const FStoreItem& Item) { return Item.ItemId == Request.ItemId; });
-		// Remove from available items.
 		OnSuccess(FText::FromString(TEXT("Purchase successful.")));
 	};
 
@@ -162,32 +185,45 @@ void UMockStoreDataProviderSubsystem::SellItem(const FTransactionRequest& Reques
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
 	/*Callback*/
-	auto SuccessWrapper = [this, Request, OnSuccess, OnFailure]()
+	auto SuccessWrapper = [this, /*FTransactionRequest*/ Request, OnSuccess, OnFailure]()
 	{
-		FStoreItem* FoundItem = BackendOwnedStoreItems.FindByPredicate([&](const FStoreItem& Item)
+		int32 Refund = 0;
+		TArray<FStoreItem*> ItemsToSell;
+		UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Backend call successful! Carrying out sale request: %s"), __FUNCTION__, *Request.ToString());
+		for (const FName& ItemId : Request.ItemIds)
 		{
-			return Item.ItemId == Request.ItemId;
-		});
-		if (FoundItem == nullptr)
-		{
-			OnFailure(FText::FromString(TEXT("Owned item not found.")));
-			return;
+			FStoreItem* FoundItem = BackendOwnedStoreItems.FindByPredicate([&](const FStoreItem& Item)
+			{
+					return Item.ItemId == ItemId;
+			});
+			if (FoundItem == nullptr)
+			{
+				const FString& ErrorText = FString::Printf(TEXT("[%hs] Item %s not found in owned items."), __FUNCTION__, *ItemId.ToString());
+				UE_LOG(LogMolecularUI, Error, TEXT("%s"), *ErrorText);
+				OnFailure(FText::FromString(ErrorText));
+				return;
+			}
+			if (!FoundItem->bIsOwned)
+			{
+				const FString& ErrorText = FString::Printf(TEXT("[%hs] Item %s not owned and cannot be sold."), __FUNCTION__, *ItemId.ToString());
+				UE_LOG(LogMolecularUI, Error, TEXT("%s"), *ErrorText);
+				OnFailure(FText::FromString(ErrorText));
+				return;
+			}
+			Refund += FoundItem->Cost / 2; // Arbitrary refund logic, e.g., 50% of the cost. TODO: Make this configurable.
+
+			UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Found item %s with cost %d."), __FUNCTION__, *FoundItem->ItemId.ToString(), FoundItem->Cost);
+			ItemsToSell.Add(FoundItem);
 		}
 
-		const bool bCanSell = FoundItem->bIsOwned;
-		if (!bCanSell)
+		for (FStoreItem* Item : ItemsToSell)
 		{
-			OnFailure(FText::FromString(TEXT("Item not owned.")));
-			return;
+			UE_LOG(LogMolecularUI, Log, TEXT("[%hs] Simulating sale of item %s with refund %d."), __FUNCTION__, *Item->ItemId.ToString(), Item->Cost / 2);
+			Item->bIsOwned = false;
+			BackendOwnedStoreItems.RemoveAll([&](const FStoreItem& Owned){ return Owned.ItemId == Item->ItemId; });
+			BackendStoreItems.AddUnique(*Item);
 		}
-
-		FoundItem->bIsOwned = false;
-
-		FStoreItem SoldItem = *FoundItem; // Copy the item to sell
-		BackendPlayerCurrency += SoldItem.Cost / 2; // Refund half the cost to player currency.
-		BackendOwnedStoreItems.RemoveAll([&](const FStoreItem& Item) { return Item.ItemId == Request.ItemId; });
-		// Remove from owned items.
-		BackendStoreItems.AddUnique(SoldItem); // Add back to available items
+		BackendPlayerCurrency += Refund;
 		OnSuccess(FText::FromString(TEXT("Sale successful.")));
 	};
 
