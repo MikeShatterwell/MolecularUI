@@ -9,6 +9,7 @@
 #include "Models/MolecularModelBase.h"
 #include "StoreModel.generated.h"
 
+class UMVVMViewModelCollectionObject;
 struct FMVVMViewModelContext;
 class USelectionViewModel;
 class UCategoryViewModel;
@@ -85,21 +86,33 @@ protected:
 	// Whether to automatically generate categories based on the store items.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|CategoryTabs")
 	bool bAutoGenerateCategoriesFromItems = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model")
+	FName SelectionViewModel_Store_Name = FName(TEXT("SelectionViewModel_Store"));
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|CategoryTabs")
+	FName SelectionViewModel_Store_Tabs_Name = FName(TEXT("SelectionViewModel_Store_Tabs"));
 	
-	// Manages store item selection
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Store Model|CategoryTabs")
+	FName StoreViewModel_Name = FName(TEXT("StoreViewModel"));
+
+	
+	// Manages store item selection and reflects the current selection state.
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Store Model|Selection")
 	TObjectPtr<USelectionViewModel> SelectionViewModel_Store = nullptr;
 
-	// Manages category tab selection
+	// Manages category tab selection and reflects the current selection state.
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Store Model|Selection")
 	TObjectPtr<USelectionViewModel> SelectionViewModel_Store_Tabs = nullptr;
-
+	
 	// The single, authoritative instance of the Store ViewModel.
 	UPROPERTY(BlueprintReadWrite, Transient)
 	TObjectPtr<UStoreViewModel> StoreViewModel = nullptr;
 
-
-
+	// Holds all ViewModels for the store Model
+	UPROPERTY(Transient)
+	TObjectPtr<UMVVMViewModelCollectionObject> StoreViewModelCollection = nullptr;
+	
 
 	// Cache for item view models to reduce UObject churn.
 	UPROPERTY(Transient)

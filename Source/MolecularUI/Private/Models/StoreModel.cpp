@@ -70,11 +70,17 @@ void UStoreModel::InitializeModel_Implementation(UWorld* World)
 		StoreDataProviderInterface.SetInterface(Cast<IStoreDataProvider>(StoreDataProviderSubsystem));
 	}
 
+	StoreViewModelCollection = NewObject<UMVVMViewModelCollectionObject>(this, UMVVMViewModelCollectionObject::StaticClass());
+
 	if (!IsValid(StoreViewModel))
 	{
 		StoreViewModel = NewObject<UStoreViewModel>(this);
 		// Start in a "None" state so initial loads can be triggered on first access.
 		StoreViewModel->AddStoreState(MolecularUITags::Store::State::None);
+
+		StoreViewModelCollection->AddViewModelInstance(
+			FMVVMViewModelContext(UStoreViewModel::StaticClass(), StoreViewModel_Name),
+			StoreViewModel);
 	}
 
 	// Add default category tabs for the available items list.
@@ -95,6 +101,13 @@ void UStoreModel::InitializeModel_Implementation(UWorld* World)
 		SelectionViewModel_Store_Tabs->ToggleSelectViewModel(CategoryTabViewModels_AvailableItems[0]);
 	}
 
+	StoreViewModelCollection->AddViewModelInstance(
+	FMVVMViewModelContext(USelectionViewModel::StaticClass(), SelectionViewModel_Store_Tabs_Name),
+	SelectionViewModel_Store_Tabs);
+	StoreViewModelCollection->AddViewModelInstance(
+		FMVVMViewModelContext(USelectionViewModel::StaticClass(), SelectionViewModel_Store_Name),
+		SelectionViewModel_Store);
+
 	UE_MVVM_BIND_FIELD(UStoreViewModel, StoreViewModel, FilterText, OnFilterTextChanged);
 	UE_MVVM_BIND_FIELD(UStoreViewModel, StoreViewModel, TransactionRequest, OnTransactionRequestChanged);
 	UE_MVVM_BIND_FIELD(UStoreViewModel, StoreViewModel, bRefreshRequested, OnRefreshRequestedChanged);
@@ -111,6 +124,13 @@ void UStoreModel::DeinitializeModel_Implementation()
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
+	}
+
+	if (IsValid(StoreViewModelCollection))
+	{
+		StoreViewModelCollection->RemoveAllViewModelInstance(StoreViewModel);
+		StoreViewModelCollection->RemoveAllViewModelInstance(SelectionViewModel_Store);
+		StoreViewModelCollection->RemoveAllViewModelInstance(SelectionViewModel_Store_Tabs);
 	}
 
 	// Unbind any field notifications from the ItemViewModel.
@@ -148,7 +168,15 @@ UMVVMViewModelBase* UStoreModel::GetViewModel_Implementation(FMVVMViewModelConte
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE_STR(__FUNCTION__);
 
-	if (IsValid(StoreViewModel) && ViewModelContext.IsCompatibleWith(StoreViewModel->GetClass()))
+	UMVVMViewModelBase* ViewModel = StoreViewModelCollection->FindViewModelInstance(ViewModelContext);
+	if (!IsValid(ViewModel))
+	{
+		UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] No matching ViewModel found for context: %s"), 
+	__FUNCTION__, *ViewModelContext.ContextName.ToString());
+		return nullptr;
+	}
+
+	if (ViewModel == StoreViewModel)
 	{
 		if (StoreViewModel->HasStoreState(MolecularUITags::Store::State::None))
 		{
@@ -157,22 +185,9 @@ UMVVMViewModelBase* UStoreModel::GetViewModel_Implementation(FMVVMViewModelConte
 			// Load stuff on initial open
 			RefreshStoreData();
 		}
-		return StoreViewModel;
 	}
 
-	if (IsValid(SelectionViewModel_Store) && ViewModelContext.IsCompatibleWith(SelectionViewModel_Store->GetClass()))
-	{
-		return SelectionViewModel_Store;
-	}
-
-	if (IsValid(SelectionViewModel_Store_Tabs) && ViewModelContext.IsCompatibleWith(SelectionViewModel_Store_Tabs->GetClass()))
-	{
-		return SelectionViewModel_Store_Tabs;
-	}
-
-	UE_LOG(LogMolecularUI, Warning, TEXT("[%hs] No matching ViewModel found for context: %s"), 
-		__FUNCTION__, *ViewModelContext.ContextName.ToString());
-	return nullptr;
+	return ViewModel;
 }
 // End IViewModelProvider implementation.
 
@@ -353,19 +368,22 @@ void UStoreModel::OnItemCategoryInteractionChanged_Implementation(UCategoryViewM
 		break;
 	case EStatefulInteraction::Clicked:
 		{
-			SelectionViewModel_Store_Tabs->ToggleSelectViewModel(InCategoryVM);
+			if (Interaction.Source.MatchesTag(MolecularUITags::InteractionSource::TabList))
+			{
+				SelectionViewModel_Store_Tabs->ToggleSelectViewModel(InCategoryVM);
+				SelectionViewModel_Store->ClearSelection(); // Switching tabs invalidates the current selection.
 
-			StoreViewModel->SetStatusMessage(FText::Format(
-				FText::FromString("{0} category: {1}"),
-				FText::FromString(CategoryTag),
-				FText::FromString(Interaction.ToString())
-			));
+				StoreViewModel->SetStatusMessage(FText::Format(
+					FText::FromString("{0} category: {1}"),
+					FText::FromString(CategoryTag),
+					FText::FromString(Interaction.ToString())
+				));
+				FilterAvailableStoreItems();
+			}
 		}
 		break;
 	}
-
-
-	// Reset the interaction state after processing
+		// Reset the interaction state after processing
 	InCategoryVM->ClearInteraction();
 }
 
@@ -558,23 +576,38 @@ void UStoreModel::FilterAvailableStoreItems_Implementation()
 		}
 
 		// Category filter pass
-		for (UInteractiveViewModelBase* SelectedVM : SelectedCategories_AvailableItems)
+		bool bCategoryMatchFound = SelectedCategories_AvailableItems.IsEmpty();
+		if (!bCategoryMatchFound)
 		{
-			UCategoryViewModel* SelectedCategoryVM = Cast<UCategoryViewModel>(SelectedVM);
-			if (!IsValid(SelectedCategoryVM))
+			for (UInteractiveViewModelBase* SelectedVM : SelectedCategories_AvailableItems)
 			{
-				continue;
-			}
-
-			if (!SelectedCategoryVM->IsAll())
-			{
-				const FGameplayTag SelectedCategoryTag = SelectedCategoryVM->GetCategoryTag();
-				const bool bCategoryMatch = SelectedCategoryTag.IsValid() && ItemData.Categories.HasTag(SelectedCategoryTag);
-				if (!bCategoryMatch)
+				const UCategoryViewModel* SelectedCategoryVM = Cast<UCategoryViewModel>(SelectedVM);
+				if (!IsValid(SelectedCategoryVM))
 				{
 					continue;
 				}
+
+				// If "All" is selected, the item passes the filter.
+				if (SelectedCategoryVM->IsAll())
+				{
+					bCategoryMatchFound = true;
+					break;
+				}
+
+				// Check if the item's tags match the selected category tag.
+				const FGameplayTag& SelectedCategoryTag = SelectedCategoryVM->GetCategoryTag();
+				if (SelectedCategoryTag.IsValid() && ItemData.Categories.HasTag(SelectedCategoryTag))
+				{
+					bCategoryMatchFound = true;
+					break; // Found a match, no need to check other categories.
+				}
 			}
+		}
+    
+		// If after checking all categories, no match was found, skip this item.
+		if (!bCategoryMatchFound)
+		{
+			continue;
 		}
 
 		UItemViewModel* ItemVM = GetOrCreateItemViewModel(ItemData);
@@ -598,8 +631,6 @@ void UStoreModel::RefreshStoreData_Implementation()
 	SelectionViewModel_Store->ClearPreview();
 	SelectionViewModel_Store->ClearSelection();
 	SelectionViewModel_Store_Tabs->ClearPreview();
-	SelectionViewModel_Store_Tabs->ClearSelection();
-
 }
 
 UItemViewModel* UStoreModel::GetOrCreateItemViewModel(const FStoreItem& ItemData)
